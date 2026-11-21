@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 const CAUSE_STYLE: Record<Cause['status'], { icon: typeof CheckCircle2; cls: string; label: string }> = {
   tak: { icon: AlertTriangle, cls: 'text-red-600 dark:text-red-400', label: 'główna przyczyna' },
   częściowo: { icon: CircleMinus, cls: 'text-amber-600 dark:text-amber-400', label: 'częściowo' },
-  nie: { icon: CheckCircle2, cls: 'text-emerald-600 dark:text-emerald-400', label: 'nie dotyczy' },
+  nie: { icon: CheckCircle2, cls: 'text-emerald-600 dark:text-emerald-400', label: 'nie stwierdzono' },
   'brak danych': { icon: CircleHelp, cls: 'text-muted-foreground', label: 'brak danych' },
 }
 
@@ -49,14 +49,14 @@ const STAGES: { id: Recommendation['stage']; title: string; desc: string; icon: 
   { id: 'nawadnianie', title: '4. Nawadnianie', desc: 'Dopiero na końcu – gdy retencja nie wystarcza', icon: Droplet },
 ]
 
-const PRIO: Record<Recommendation['priority'], 'destructive' | 'default' | 'secondary'> = { wysoki: 'destructive', średni: 'default', niski: 'secondary' }
+const PRIO: Record<Recommendation['priority'], 'default' | 'secondary' | 'outline'> = { wysoki: 'default', średni: 'secondary', niski: 'outline' }
 
 function RecItem({ r, onLocate }: { r: Recommendation; onLocate?: (lat: number, lon: number) => void }) {
   return (
-    <div className="rounded-lg border p-3">
+    <div className={cn('bg-card rounded-lg border p-3', r.priority === 'wysoki' && 'border-primary/40 ring-primary/10 ring-1')}>
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
         <p className="font-medium">{r.title}</p>
-        <Badge variant={PRIO[r.priority]}>priorytet: {r.priority}</Badge>
+        <Badge variant={PRIO[r.priority]}>{r.priority === 'wysoki' ? 'zrób w pierwszej kolejności' : `priorytet: ${r.priority}`}</Badge>
       </div>
       <p className="text-sm">{r.action}</p>
       <div className="bg-muted/60 mt-2 rounded-md p-2 text-xs">

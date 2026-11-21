@@ -64,6 +64,16 @@ class Recommendation:
     location: dict | None = None  # {"lat", "lon", "label"}
 
 
+def pl(x: float, nd: int = 0) -> str:
+    """Polish number formatting: decimal comma, real minus sign."""
+    txt = f"{abs(x):.{nd}f}".replace(".", ",")
+    return ("\u2212" if x < 0 and float(txt.replace(",", ".")) != 0 else "") + txt
+
+
+def pct(x: float) -> str:
+    return f"{round(x * 100)}%"
+
+
 # ---------------------------------------------------------------- meteorology of the recent window
 
 def _longest_dry_spell(p: pd.Series, thr: float = 1.0) -> int:
@@ -199,11 +209,11 @@ def advise(
         p_ratio = ms_now["p"] / ms_med["p"] if ms_med["p"] > 0 else 1
         hot_more = ms_now["hot_days"] - ms_med["hot_days"]
         dry_more = ms_now["dry_spell"] - ms_med["dry_spell"]
-        ev.append(f"Opad w ostatnich 60 dniach: {ms_now['p']:.0f} mm, czyli {p_ratio:.0%} typowej wartości ({ms_med['p']:.0f} mm, mediana z {meteo_stats['n_years']} lat).")
-        ev.append(f"Parowanie potencjalne (ET₀): {ms_now['et0']:.0f} mm (typowo {ms_med['et0']:.0f} mm).")
-        ev.append(f"Dni upalne (≥30°C): {ms_now['hot_days']} (typowo {ms_med['hot_days']:.0f}). Najdłuższy okres bez opadu (<1 mm): {ms_now['dry_spell']} dni (typowo {ms_med['dry_spell']:.0f}).")
+        ev.append(f"Opad w ostatnich 60 dniach: {pl(ms_now['p'], 0)} mm, czyli {pct(p_ratio)} typowej wartości ({pl(ms_med['p'], 0)} mm, mediana z {meteo_stats['n_years']} lat).")
+        ev.append(f"Parowanie potencjalne (ET₀): {pl(ms_now['et0'], 0)} mm (typowo {pl(ms_med['et0'], 0)} mm).")
+        ev.append(f"Dni upalne (≥30°C): {ms_now['hot_days']} (typowo {pl(ms_med['hot_days'], 0)}). Najdłuższy okres bez opadu (<1 mm): {ms_now['dry_spell']} dni (typowo {pl(ms_med['dry_spell'], 0)}).")
         if window.get("percentile") is not None:
-            ev.append(f"Bilans wodny (opad − parowanie) jest na {window['percentile']:.0f}. percentylu wielolecia.")
+            ev.append(f"Bilans wodny (opad − parowanie) jest na {pl(window['percentile'], 0)}. percentylu wielolecia.")
         strong = p_ratio < 0.6 or (window.get("percentile") is not None and window["percentile"] <= 20)
         some = p_ratio < 0.85 or hot_more >= 3 or dry_more >= 5 or drought_now
         causes.append(Cause("meteo", "Niedobór opadów i wysoka temperatura", "tak" if strong else "częściowo" if some else "nie", ev))
@@ -219,9 +229,9 @@ def advise(
     elif soil_code == 5:
         ev.append("Gleby organiczne – zwykle dobrze zatrzymują wodę, ale po przesuszeniu tracą zdolność retencji (mineralizacja).")
     if soilgrids:
-        ev.append(f"Skład gleby (SoilGrids, 0–30 cm): piasek {soilgrids['sand_pct']:.0f}%, ił {soilgrids['clay_pct']:.0f}% – gleba {soilgrids['texture']}.")
-        ev.append(f"Woda dostępna dla roślin w profilu 0–100 cm: ok. {soilgrids['awc_mm_100']:.0f} mm (Saxton & Rawls 2006).")
-        ev.append(f"Węgiel organiczny 0–30 cm: {soilgrids['soc_pct']:.1f}% (materia organiczna ok. {soilgrids['om_pct']:.1f}%).")
+        ev.append(f"Skład gleby (SoilGrids, 0–30 cm): piasek {pl(soilgrids['sand_pct'], 0)}%, ił {pl(soilgrids['clay_pct'], 0)}% – gleba {soilgrids['texture']}.")
+        ev.append(f"Woda dostępna dla roślin w profilu 0–100 cm: ok. {pl(soilgrids['awc_mm_100'], 0)} mm (Saxton & Rawls 2006).")
+        ev.append(f"Węgiel organiczny 0–30 cm: {pl(soilgrids['soc_pct'], 1)}% (materia organiczna ok. {pl(soilgrids['om_pct'], 1)}%).")
         weak += soilgrids["awc_mm_100"] < 110
         weak += soilgrids["soc_pct"] < 1.2
     status = "brak danych" if not ev else "tak" if weak >= 2 else "częściowo" if weak == 1 else "nie"
@@ -231,17 +241,17 @@ def advise(
     ev = []
     runoff = 0
     if terrain:
-        ev.append(f"Nachylenie działki (NMT GUGiK): średnio {terrain['slope_pct']:.1f}%, lokalnie do {terrain['max_local_slope_pct']:.0f}%; różnica wysokości {terrain['relief_m']:.1f} m.")
+        ev.append(f"Nachylenie działki (NMT GUGiK): średnio {pl(terrain['slope_pct'], 1)}%, lokalnie do {pl(terrain['max_local_slope_pct'], 0)}%; różnica wysokości {pl(terrain['relief_m'], 1)} m.")
         if terrain.get("downslope_dir"):
             ev.append(f"Woda opadowa spływa w kierunku: {terrain['downslope_dir']}.")
         runoff += terrain["slope_pct"] >= 3
         runoff += terrain["slope_pct"] >= 8
     if surroundings:
         ev.append(
-            f"W promieniu ~1 km (mapa IUNG): wody {surroundings['water_share']:.0%}, lasy i zadrzewienia {surroundings['forest_share']:.0%}, gleby organiczne (dawne mokradła) {surroundings['organic_share']:.0%}."
+            f"W promieniu ~1 km (mapa IUNG): wody {pct(surroundings['water_share'])}, lasy i zadrzewienia {pct(surroundings['forest_share'])}, gleby organiczne (dawne mokradła) {pct(surroundings['organic_share'])}."
         )
         if surroundings.get("nearest_water_m") is not None:
-            ev.append(f"Najbliższe wody powierzchniowe na mapie IUNG: ok. {surroundings['nearest_water_m']:.0f} m od działki.")
+            ev.append(f"Najbliższe wody powierzchniowe na mapie IUNG: ok. {pl(surroundings['nearest_water_m'], 0)} m od działki.")
         few_elements = surroundings["water_share"] + surroundings["forest_share"] + surroundings["organic_share"] < 0.1
         if few_elements:
             ev.append("Mało elementów krajobrazu spowalniających odpływ wody (oczka, mokradła, zadrzewienia).")
@@ -252,9 +262,9 @@ def advise(
     # ---------------- cause 4: crop sensitivity
     ev = []
     if yrs_total:
-        ev.append(f"W ostatnich {yrs_total} latach susza dla uprawy „{crop_name}” na tej glebie wystąpiła w {yrs} sezonach.")
+        ev.append(f"W ostatnich {yrs_total} latach susza dla uprawy „{crop_name}” na tej glebie " + ("nie wystąpiła ani razu." if yrs == 0 else f"wystąpiła w {yrs} z {yrs_total} sezonów."))
     if worst:
-        ev.append(f"Najczęściej w okresie {worst['period']} ({worst['share']:.0%} lat) – to krytyczny czas dla tej uprawy.")
+        ev.append(f"Najczęściej w okresie {worst['period']} ({pct(worst['share'])} lat) – to krytyczny czas dla tej uprawy.")
     better = [c for c in comparison if c["drought_years"] is not None and c["crop"] != crop and c["drought_years"] < yrs]
     if better and yrs >= 2:
         ev.append("Mniej narażone na tej działce: " + ", ".join(f"{c['name'].lower()} ({c['drought_years']}/{c['n']})" for c in better[:3]) + ".")
@@ -265,8 +275,8 @@ def advise(
         recs.append(Recommendation(
             "low_spot", "retencja_krajobrazowa", "Zatrzymaj wodę w najniższym miejscu działki",
             "W najniższym punkcie działki (zaznaczony na mapie) rozważ nieckę, płytkie oczko śródpolne lub pas trwałej roślinności, gdzie woda opadowa będzie mogła wsiąkać zamiast odpływać.",
-            [f"Różnica wysokości na działce: {terrain['relief_m']:.1f} m, średnie nachylenie {terrain['slope_pct']:.1f}% – woda zbiera się w jednym miejscu.",
-             f"Najniższy punkt: {terrain['min_m']:.1f} m n.p.m."],
+            [f"Różnica wysokości na działce: {pl(terrain['relief_m'], 1)} m, średnie nachylenie {pl(terrain['slope_pct'], 1)}% – woda zbiera się w jednym miejscu.",
+             f"Najniższy punkt: {pl(terrain['min_m'], 1)} m n.p.m."],
             "wysoki" if terrain["slope_pct"] >= 3 else "średni", ["NWRM (EC 2014)", "CDR 2025", "NMT GUGiK"],
             permit="Budowa stawu lub zbiornika może wymagać zgłoszenia lub pozwolenia wodnoprawnego (Wody Polskie) – sprawdź przed realizacją.",
             location={"lat": terrain["lowest_point"][0], "lon": terrain["lowest_point"][1], "label": "Najniższy punkt działki"},
@@ -275,14 +285,14 @@ def advise(
         recs.append(Recommendation(
             "buffer", "retencja_krajobrazowa", "Pas buforowy lub zadrzewienie na dolnej krawędzi pola",
             f"Wzdłuż dolnej krawędzi działki (strona: {terrain.get('downslope_dir') or 'najniższa'}) pozostaw pas trawy, krzewów lub drzew szerokości kilku metrów. Spowalnia spływ, zatrzymuje glebę i wodę.",
-            [f"Nachylenie {terrain['slope_pct']:.1f}% sprzyja spływowi powierzchniowemu i erozji."],
+            [f"Nachylenie {pl(terrain['slope_pct'], 1)}% sprzyja spływowi powierzchniowemu i erozji."],
             "wysoki" if terrain["slope_pct"] >= 8 else "średni", ["NWRM (EC 2014)", "Podstawy naukowe KOWR"],
         ))
     if surroundings and surroundings.get("nearest_water_m") is not None and surroundings["nearest_water_m"] <= 500:
         recs.append(Recommendation(
             "ditch", "retencja_krajobrazowa", "Spowolnij odpływ w rowach i ciekach przy działce",
             "Jeśli przy działce jest rów melioracyjny, rozważ zastawkę (piętrzenie) wiosną, by zatrzymać wodę z roztopów, oraz ochronę istniejących oczek i mokradeł z pasem buforowym.",
-            [f"Wody powierzchniowe ok. {surroundings['nearest_water_m']:.0f} m od działki."],
+            [f"Wody powierzchniowe ok. {pl(surroundings['nearest_water_m'], 0)} m od działki."],
             "średni", ["NWRM (EC 2014)", "CDR 2025"],
             permit="Piętrzenie wody na rowach wymaga uzgodnienia z zarządcą (spółka wodna / Wody Polskie).",
         ))
@@ -300,9 +310,9 @@ def advise(
     if low_soc or light:
         why = []
         if soilgrids and soilgrids["soc_pct"] < 2.0:
-            why.append(f"Węgiel organiczny tylko {soilgrids['soc_pct']:.1f}% – każdy 1% więcej materii organicznej to kilka mm więcej wody w glebie.")
+            why.append(f"Węgiel organiczny tylko {pl(soilgrids['soc_pct'], 1)}% – każdy 1% więcej materii organicznej to kilka mm więcej wody w glebie.")
         elif soilgrids:
-            why.append(f"Węgiel organiczny {soilgrids['soc_pct']:.1f}% to dobry poziom – na lekkiej glebie trzeba go utrzymać, bo to główny magazyn wody.")
+            why.append(f"Węgiel organiczny {pl(soilgrids['soc_pct'], 1)}% to dobry poziom – na lekkiej glebie trzeba go utrzymać, bo to główny magazyn wody.")
         if light:
             why.append(f"Gleba lekka (kat. {category or '?'}) szybko przesycha.")
         recs.append(Recommendation(
@@ -315,7 +325,7 @@ def advise(
         "Po zbiorze wysiej międzyplon ścierniskowy lub ozimy. Gleba okryta roślinami lub mulczem paruje mniej i lepiej chłonie deszcz.",
         [*([f"Susza na tej działce wystąpiła w {yrs}/{yrs_total} sezonów."] if yrs else []),
          *([f"Gleba lekka (kat. {category or '?'}) – bez okrywy szybko traci wodę."] if light else []),
-         *([f"Bieżący bilans wodny na {window['percentile']:.0f}. percentylu wielolecia."] if window.get("percentile") is not None and window["percentile"] <= 30 else []),
+         *([f"Bieżący bilans wodny na {pl(window['percentile'], 0)}. percentylu wielolecia."] if window.get("percentile") is not None and window["percentile"] <= 30 else []),
          "Gleba okryta roślinami lub resztkami paruje mniej niż goła."],
         "wysoki" if yrs >= 3 or light else "średni", ["Podstawy naukowe KOWR", "CDR 2025"],
     ))
@@ -334,7 +344,7 @@ def advise(
         recs.append(Recommendation(
             "timing", "agrotechnika", f"Przygotuj się na okres {worst['period']}",
             "Wybieraj odmiany o większej tolerancji na suszę i termin siewu pozwalający roślinom ukorzenić się przed tym okresem. Monitoruj stan upraw szczególnie w tym czasie.",
-            [f"W tym okresie susza wystąpiła w {worst['share']:.0%} z ostatnich {worst['n']} lat."],
+            [f"W tym okresie susza wystąpiła w {pct(worst['share'])} z ostatnich {worst['n']} lat."],
             "średni", ["IUNG SMSR"],
         ))
     if better and yrs >= 3:
@@ -351,7 +361,10 @@ def advise(
         need = balance["stress"]
         rain_soon = forecast.get("p_next7_mm") if forecast else None
         dose = int(round(min(balance["depletion_mm"], 30) / 5) * 5) if need else 0
-        if need and rain_soon is not None and rain_soon >= balance["depletion_mm"] * 0.8:
+        low_demand = (balance.get("kc") or 0) <= 0.5  # initial growth or ripening – irrigation not economical
+        if low_demand:
+            decision, dose = "niezasadne", 0
+        elif need and rain_soon is not None and rain_soon >= balance["depletion_mm"] * 0.8:
             decision, dose = "wstrzymaj się", 0
         elif need:
             decision = "zasadne"
@@ -362,9 +375,11 @@ def advise(
             f"Ostatnie 7 dni: opad {balance['p_last7_mm']} mm, potrzeby wodne uprawy (ET₀·Kc) {balance['etc_last7_mm']} mm.",
         ]
         if rain_soon is not None:
-            why.append(f"Prognoza opadu na 7 dni (Open-Meteo): {rain_soon:.0f} mm.")
+            why.append(f"Prognoza opadu na 7 dni (Open-Meteo): {pl(rain_soon, 0)} mm.")
         if balance["stress_days_season"]:
             why.append(f"Dni ze stresem wodnym w tym sezonie: {balance['stress_days_season']}.")
+        if low_demand:
+            why.append(f"Uprawa jest w fazie o małych potrzebach wodnych (współczynnik Kc = {pl(balance['kc'], 2)}: początek wegetacji albo dojrzewanie) – nawadnianie byłoby nieopłacalne.")
         irrigation = {"decision": decision, "dose_mm": dose, **balance, "p_next7_mm": rain_soon}
         recs.append(Recommendation(
             "irrigation", "nawadnianie",

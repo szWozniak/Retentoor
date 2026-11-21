@@ -9,7 +9,42 @@ import { CausesSection, CropComparison, RecommendationsSection } from './AdviceS
 import { formatDate, formatDateShort, formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-const mm = (v: number | null | undefined) => (v === null || v === undefined ? '–' : `${v > 0 ? '+' : ''}${Math.round(v)} mm`)
+/** Signed millimetres with a real minus sign (U+2212), e.g. "−146 mm", "+12 mm". */
+const mm = (v: number | null | undefined) =>
+  v === null || v === undefined ? '–' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(Math.round(v))}\u00a0mm`
+/** Threshold text, e.g. "−184 mm". */
+const thr = (v: number | string | null | undefined) => (typeof v === 'number' ? mm(v) : '–')
+
+const SECTIONS = [
+  { id: 'ocena', label: 'Ocena' },
+  { id: 'historia', label: 'Historia' },
+  { id: 'przyczyny', label: 'Przyczyny' },
+  { id: 'rekomendacje', label: 'Rekomendacje' },
+  { id: 'uprawy', label: 'Uprawy' },
+  { id: 'zrodla', label: 'Źródła' },
+]
+
+function SectionNav() {
+  return (
+    <nav
+      aria-label="Sekcje raportu"
+      className="no-print bg-background/90 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-[1100] -mx-4 border-b px-4 py-2 backdrop-blur"
+    >
+      <ul className="flex gap-1 overflow-x-auto text-sm">
+        {SECTIONS.map((s) => (
+          <li key={s.id}>
+            <a
+              href={`#${s.id}`}
+              className="text-muted-foreground hover:text-foreground hover:bg-muted block rounded-md px-3 py-1.5 whitespace-nowrap transition-colors"
+            >
+              {s.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
 
 function StatusBanner({ a }: { a: Analysis }) {
   const lp = a.current.last_period
@@ -21,34 +56,64 @@ function StatusBanner({ a }: { a: Analysis }) {
   if (lp && lp.drought) {
     tone = 'bad'
     title = 'Susza rolnicza dla tej uprawy'
-    text = `W ostatnim zakończonym okresie (${lp.period}) bilans wodny wyniósł ${mm(lp.kbw)}, poniżej progu ${lp.threshold} mm dla ${a.crop.name.toLowerCase()} na glebie kat. ${a.soil.category_used}.`
+    text = `W ostatnim zakończonym okresie (${lp.period}) bilans wodny wyniósł ${mm(lp.kbw)}, poniżej progu ${thr(lp.threshold)} dla uprawy „${a.crop.name.toLowerCase()}” na glebie kat. ${a.soil.category_used}.`
   } else if (lp && lp.drought === false) {
     const close = lp.margin !== null && lp.margin < 30
     tone = close ? 'warn' : 'ok'
     title = close ? 'Blisko progu suszy' : 'Brak suszy rolniczej'
-    text = `W ostatnim zakończonym okresie (${lp.period}) bilans wodny wyniósł ${mm(lp.kbw)} przy progu suszy ${lp.threshold} mm (zapas ${Math.round(lp.margin ?? 0)} mm).`
+    text = `W ostatnim zakończonym okresie (${lp.period}) bilans wodny wyniósł ${mm(lp.kbw)} przy progu suszy ${thr(lp.threshold)} – zapas ${Math.round(lp.margin ?? 0)}\u00a0mm.`
   } else if (w.kbw !== null) {
     text = !a.current.in_season
       ? `Data poza okresem monitoringu suszy IUNG (21.III–30.IX). Bilans wodny z ostatnich 60 dni: ${mm(w.kbw)}.`
       : `Dla tej uprawy w bieżącym okresie nie ma progu suszy (brak spadków plonu w tym czasie). Bilans z ostatnich 60 dni: ${mm(w.kbw)}.`
   }
 
+  // top 3 actions: highest priority first, keeping the retention-first order within the same priority
+  const rank = { wysoki: 0, średni: 1, niski: 2 } as const
+  // retention before irrigation (KOWR): irrigation can only take the 3rd slot, and only when it's advised
+  const ranked = [...a.recommendations]
+    .map((r, i) => ({ r, i }))
+    .filter((x) => x.r.stage !== 'nawadnianie')
+    .sort((x, y) => rank[x.r.priority] - rank[y.r.priority] || x.i - y.i)
+    .map((x) => x.r)
+  const irrigation = a.recommendations.find((r) => r.stage === 'nawadnianie' && a.irrigation?.decision === 'zasadne')
+  const top = irrigation ? [...ranked.slice(0, 2), irrigation] : ranked.slice(0, 3)
+
   const Icon = tone === 'bad' ? AlertTriangle : tone === 'ok' ? CheckCircle2 : tone === 'warn' ? AlertTriangle : CircleHelp
   return (
     <div
       role="status"
       className={cn(
-        'flex gap-3 rounded-xl border p-4',
+        'flex gap-3 rounded-xl border p-4 sm:p-5',
         tone === 'bad' && 'border-red-300 bg-red-50 text-red-900 dark:bg-red-950/40 dark:text-red-100',
         tone === 'warn' && 'border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100',
         tone === 'ok' && 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100',
         tone === 'unknown' && 'bg-muted',
       )}
     >
-      <Icon className="mt-0.5 size-5 shrink-0" aria-hidden />
-      <div>
-        <p className="font-semibold">{title}</p>
-        {text && <p className="mt-1 text-sm">{text}</p>}
+      <Icon className="mt-1 size-6 shrink-0" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium tracking-wide uppercase opacity-70">W skrócie</p>
+        <p className="text-lg font-semibold">{title}</p>
+        {text && <p className="mt-0.5 text-sm">{text}</p>}
+        {top.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-1 text-sm font-medium">Najważniejsze działania:</p>
+            <ol className="grid gap-1.5 text-sm sm:grid-cols-3">
+              {top.map((r, i) => (
+                <li key={r.id}>
+                  <a
+                    href="#rekomendacje"
+                    className="flex h-full gap-2 rounded-md bg-white/60 px-2.5 py-1.5 transition-colors hover:bg-white/90 dark:bg-white/5 dark:hover:bg-white/10"
+                  >
+                    <span className="font-semibold tabular-nums">{i + 1}.</span>
+                    <span>{r.title}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -66,7 +131,7 @@ function KbwChart({ a }: { a: Analysis }) {
       <ComposedChart data={data} margin={{ left: 4, right: 12, top: 8 }}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={32} tickFormatter={(v) => formatDateShort(v)} />
-        <YAxis tickLine={false} axisLine={false} width={64} tickFormatter={(v) => `${v} mm`} />
+        <YAxis tickLine={false} axisLine={false} width={44} tickFormatter={(v: number) => `${v < 0 ? '−' : ''}${Math.abs(v)}`} />
         <ReferenceLine y={0} stroke="var(--border)" />
         <ChartTooltip content={<ChartTooltipContent labelFormatter={(_, p) => formatDate(p?.[0]?.payload?.date)} />} />
         <ChartLegend itemSorter={null} content={<ChartLegendContent />} />
@@ -101,11 +166,11 @@ function HistoryGrid({ a }: { a: Analysis }) {
               {y.periods.map((p) => (
                 <td
                   key={p.period}
-                  title={`${y.year}, ${p.period}: KBW ${mm(p.kbw)}${typeof p.threshold === 'number' ? `, próg ${p.threshold} mm` : ''}`}
+                  title={`${y.year}, ${p.period}: KBW ${mm(p.kbw)}${typeof p.threshold === 'number' ? `, próg ${thr(p.threshold)}` : ''}`}
                   className={cn(
                     'h-6 min-w-6 rounded-sm text-center',
-                    p.drought === true && 'bg-red-500 text-white',
-                    p.drought === false && 'bg-emerald-100 dark:bg-emerald-900/40',
+                    p.drought === true && 'bg-status-critical font-bold text-white',
+                    p.drought === false && 'bg-emerald-100 dark:bg-emerald-900/35',
                     p.drought === null && 'bg-muted',
                   )}
                 >
@@ -117,7 +182,7 @@ function HistoryGrid({ a }: { a: Analysis }) {
         </tbody>
       </table>
       <p className="text-muted-foreground mt-2 text-xs">
-        <span className="mr-1 inline-block size-3 rounded-sm bg-red-500 align-middle" /> susza (KBW poniżej progu)
+        <span className="bg-status-critical mr-1 inline-block size-3 rounded-sm align-middle" /> susza (KBW poniżej progu)
         <span className="mr-1 ml-3 inline-block size-3 rounded-sm bg-emerald-100 align-middle" /> bez suszy
         <span className="bg-muted mr-1 ml-3 inline-block size-3 rounded-sm align-middle" /> brak progu dla uprawy w tym okresie
       </p>
@@ -131,9 +196,11 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
 
   return (
     <div className="grid gap-4">
+      <SectionNav />
+      <section id="ocena" data-section className="grid gap-4">
       <StatusBanner a={a} />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <KpiCard
           label="Bilans wodny, ostatnie 60 dni"
           value={mm(w.kbw)}
@@ -159,9 +226,9 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
 
       <Card>
         <CardHeader>
-          <CardTitle>Bilans wodny w {new Date(a.analysis_date).getFullYear()} r.</CardTitle>
+          <CardTitle>Bilans wodny w {new Date(a.analysis_date).getFullYear()} r. na tle wielolecia</CardTitle>
           <CardDescription>
-            Opad minus parowanie w kroczącym oknie 60 dni (metoda IUNG). Im niżej, tym bardziej sucho. Romby to progi suszy dla wybranej uprawy i gleby.
+            Opad minus parowanie w kroczącym oknie 60 dni, w mm (metoda IUNG). Im niżej, tym bardziej sucho. Romby to progi suszy dla wybranej uprawy i gleby.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -169,8 +236,10 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
         </CardContent>
       </Card>
 
+      </section>
+
       {a.history.years.length > 0 && (
-        <Card>
+        <Card id="historia" data-section>
           <CardHeader>
             <CardTitle>Historia suszy na tej działce (10 lat)</CardTitle>
             <CardDescription>Każda kratka to jeden 60-dniowy okres IUNG.<span className="no-print"> Najedź, by zobaczyć wartości.</span></CardDescription>
@@ -181,15 +250,21 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
         </Card>
       )}
 
-      <CausesSection a={a} />
-      <RecommendationsSection a={a} onLocate={onLocate} />
-      <CropComparison a={a} />
+      <div id="przyczyny" data-section>
+        <CausesSection a={a} />
+      </div>
+      <div id="rekomendacje" data-section>
+        <RecommendationsSection a={a} onLocate={onLocate} />
+      </div>
+      <div id="uprawy" data-section>
+        <CropComparison a={a} />
+      </div>
 
-      <Card>
+      <Card id="zrodla" data-section>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Info className="size-4" /> Wiarygodność i źródła
-            <Badge variant={a.confidence === 'wysoki' ? 'default' : a.confidence === 'średni' ? 'secondary' : 'destructive'}>
+            <Badge variant={a.confidence === 'wysoki' ? 'default' : a.confidence === 'średni' ? 'secondary' : 'outline'}>
               pewność: {a.confidence}
             </Badge>
           </CardTitle>

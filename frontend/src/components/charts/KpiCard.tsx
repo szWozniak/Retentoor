@@ -25,12 +25,12 @@ export function KpiCard({ label, value, delta, upIsGood = true, hint, icon, load
   const Icon = dir > 0 ? ArrowUpRight : dir < 0 ? ArrowDownRight : Minus
 
   return (
-    <div className="bg-card rounded-xl border p-5">
+    <div className="bg-card rounded-xl border p-4 sm:p-5">
       <div className="text-muted-foreground flex items-center justify-between text-sm">
         <span>{label}</span>
         {icon}
       </div>
-      <div className="mt-2 text-3xl font-semibold tracking-tight">{value}</div>
+      <div className="mt-2 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{value}</div>
       {(delta !== undefined || hint) && (
         <div className="mt-1 flex items-center gap-2 text-xs">
           {delta !== undefined && (

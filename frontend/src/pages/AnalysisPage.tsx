@@ -1,7 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Loader2, MapPin, Search } from 'lucide-react'
+import { Check, CloudSun, FileText, Layers, Loader2, MapPin, MousePointerClick, Search, Sprout } from 'lucide-react'
 import { api, type Analysis, type Crop, type Parcel } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,12 +9,24 @@ import { Input } from '@/components/ui/input'
 import { ParcelMap } from '@/components/map/ParcelMap'
 import { LandUseNotice } from '@/components/map/LandUseNotice'
 import { AnalysisResult } from '@/components/analysis/AnalysisResult'
+import { AnalysisProgress } from '@/components/analysis/AnalysisProgress'
 import { ReportHeader } from '@/components/analysis/ReportHeader'
-import { KpiSkeleton, ChartSkeleton } from '@/components/skeletons'
 import { formatNumber } from '@/lib/format'
+import { cn } from '@/lib/utils'
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
 const minDateIso = () => `${new Date().getFullYear() - 10}-01-01`
+
+/** Real parcels from different regions – handy for the demo and for trying the tool. */
+const SAMPLES = [
+  { id: '200807_2.0012.162', label: 'Trzcianne', hint: 'podlaskie · gleba lekka' },
+  { id: '260104_5.0016.78', label: 'Pacanów', hint: 'świętokrzyskie · gleba ciężka' },
+  { id: '302111_5.0016.1/10', label: 'Murowana Goślina', hint: 'wielkopolskie · gleby mieszane' },
+  { id: '100206_2.0008.273/23', label: 'Kutno', hint: 'łódzkie' },
+]
+
+const fieldCls =
+  'border-input dark:bg-input/30 h-10 w-full rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -22,6 +34,56 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-muted-foreground">{label}</span>
       <span className="text-right font-medium">{value}</span>
     </div>
+  )
+}
+
+function StepTitle({ n, done, children }: { n: number; done: boolean; children: ReactNode }) {
+  return (
+    <CardTitle className="flex items-center gap-2.5">
+      <span
+        className={cn(
+          'grid size-7 shrink-0 place-items-center rounded-full text-sm font-semibold transition-colors',
+          done ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary',
+        )}
+        aria-hidden
+      >
+        {done ? <Check className="size-4" /> : n}
+      </span>
+      {children}
+      {done && <span className="sr-only">(gotowe)</span>}
+    </CardTitle>
+  )
+}
+
+function Intro() {
+  const items = [
+    { icon: MousePointerClick, title: 'Wskaż działkę', text: 'numerem ewidencyjnym albo kliknięciem na mapie' },
+    { icon: Sprout, title: 'Wybierz uprawę', text: 'i dzień, na który chcesz ocenić sytuację' },
+    { icon: FileText, title: 'Dostań raport', text: 'ocena suszy, przyczyny i konkretne działania' },
+  ]
+  return (
+    <section className="animate-fade-up grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">Sprawdź, jak zatrzymać wodę na swoim polu</h1>
+        <p className="text-muted-foreground mt-1 max-w-2xl text-pretty">
+          Bezpłatne narzędzie, które łączy dane pogodowe z 10 lat, mapy glebowe, ukształtowanie terenu i dane hydrologiczne, a potem mówi
+          prostym językiem, czy Twojej działce grozi susza i co możesz zrobić.
+        </p>
+      </div>
+      <ol className="grid gap-2 sm:grid-cols-3 lg:w-[620px]">
+        {items.map((it, i) => (
+          <li key={it.title} className="bg-card flex gap-3 rounded-xl border p-3">
+            <it.icon className="text-primary mt-0.5 size-5 shrink-0" aria-hidden />
+            <span className="text-sm">
+              <span className="block font-medium">
+                {i + 1}. {it.title}
+              </span>
+              <span className="text-muted-foreground">{it.text}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 
@@ -36,6 +98,7 @@ export default function AnalysisPage() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [analysing, setAnalysing] = useState(false)
   const [focus, setFocus] = useState<{ lat: number; lon: number; t: number } | null>(null)
+  const resultsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     api.crops().then(setCrops).catch(() => toast.error('Nie udało się pobrać listy upraw'))
@@ -69,6 +132,7 @@ export default function AnalysisPage() {
     setAnalysing(true)
     setAnalysis(null)
     syncUrl({ dzialka: p.id, uprawa: c, data: d })
+    requestAnimationFrame(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
     try {
       const a = await api.analyse(p.id, c, d)
       setAnalysis(a)
@@ -95,86 +159,77 @@ export default function AnalysisPage() {
     loadParcel(() => api.parcelById(query))
   }
 
+  const showIntro = !parcel && !analysis && !analysing && !busy
+
   return (
     <div className="grid gap-6">
-      <div className="grid gap-6 lg:grid-cols-[360px_1fr] print:block">
-        <div className="no-print grid content-start gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>1. Wskaż działkę</CardTitle>
-              <CardDescription>Wpisz numer działki ewidencyjnej albo kliknij swoje pole na mapie.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3">
-              <form onSubmit={onSearch} className="flex gap-2">
-                <Input placeholder="np. 260104_5.0016.78" aria-label="Numer działki ewidencyjnej" value={query} onChange={(e) => setQuery(e.target.value)} />
-                <Button type="submit" disabled={busy} aria-label="Szukaj działki">
-                  {busy ? <Loader2 className="animate-spin" /> : <Search />}
-                </Button>
-              </form>
-              {parcel && (
-                <div className="rounded-lg border p-3">
-                  <p className="flex items-center gap-1.5 font-medium">
-                    <MapPin className="size-4" /> Działka {parcel.number}, obręb {parcel.region}
-                  </p>
-                  <p className="text-muted-foreground mb-1 text-xs break-all">{parcel.id}</p>
-                  <Row label="Powierzchnia" value={`${formatNumber(Math.round(parcel.area_ha * 100) / 100)} ha`} />
-                  <Row label="Gmina" value={`${parcel.commune} (${parcel.county})`} />
-                  <Row label="Województwo" value={parcel.voivodeship} />
-                  {parcel.landuse && (
-                    <div className="mt-2">
-                      <LandUseNotice landuse={parcel.landuse} />
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>2. Uprawa i data</CardTitle>
-              <CardDescription>Wybierz uprawę, dla której chcesz ocenić ryzyko suszy.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form
-                className="grid gap-3"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  runAnalysis()
-                }}
-              >
-                <label className="grid gap-1 text-sm">
-                  <span className="font-medium">Uprawa</span>
-                  <select
-                    className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-                    value={crop}
-                    onChange={(e) => setCrop(e.target.value)}
-                  >
-                    <option value="">– wybierz –</option>
-                    {crops.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-1 text-sm">
-                  <span className="font-medium">Data analizy</span>
-                  <Input type="date" value={date} min={minDateIso()} max={todayIso()} onChange={(e) => setDate(e.target.value)} />
-                </label>
-                <Button type="submit" size="lg" disabled={!parcel || !crop || analysing}>
-                  {analysing ? (
-                    <>
-                      <Loader2 className="animate-spin" /> Analizuję dane z 10 lat…
-                    </>
-                  ) : parcel?.landuse?.class === 'nierolna' ? (
-                    'Analizuj mimo to'
-                  ) : (
-                    'Analizuj działkę'
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+      {showIntro && (
+        <div className="no-print">
+          <Intro />
         </div>
+      )}
+
+      {/* mobile order: parcel → map → crop; desktop: controls left, map right */}
+      <div className="grid gap-4 lg:grid-cols-[380px_1fr] lg:grid-rows-[auto_1fr] lg:gap-6 print:block">
+        <Card className="no-print lg:col-start-1 lg:row-start-1">
+          <CardHeader>
+            <StepTitle n={1} done={!!parcel}>
+              Wskaż działkę
+            </StepTitle>
+            <CardDescription>Wpisz numer działki ewidencyjnej albo kliknij swoje pole na mapie.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <form onSubmit={onSearch} className="flex gap-2" role="search">
+              <Input
+                className="h-10"
+                placeholder="np. 260104_5.0016.78"
+                aria-label="Numer działki ewidencyjnej"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                spellCheck={false}
+              />
+              <Button type="submit" size="icon" className="size-10" disabled={busy} aria-label="Szukaj działki">
+                {busy ? <Loader2 className="animate-spin" /> : <Search />}
+              </Button>
+            </form>
+
+            {!parcel && (
+              <div>
+                <p className="text-muted-foreground mb-1.5 text-xs">Nie masz numeru pod ręką? Wypróbuj przykładową działkę:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {SAMPLES.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      title={`${s.id} · ${s.hint}`}
+                      onClick={() => loadParcel(() => api.parcelById(s.id))}
+                      className="hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-ring/50 rounded-full border px-2.5 py-1 text-xs transition-colors outline-none focus-visible:ring-[3px]"
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {parcel && (
+              <div className="animate-fade-up rounded-lg border p-3">
+                <p className="flex items-center gap-1.5 font-medium">
+                  <MapPin className="text-primary size-4" aria-hidden /> Działka {parcel.number}, obręb {parcel.region}
+                </p>
+                <p className="text-muted-foreground mb-1 font-mono text-xs break-all">{parcel.id}</p>
+                <Row label="Powierzchnia" value={`${formatNumber(Math.round(parcel.area_ha * 100) / 100)} ha`} />
+                <Row label="Gmina" value={`${parcel.commune} (${parcel.county})`} />
+                <Row label="Województwo" value={parcel.voivodeship} />
+                {parcel.landuse && (
+                  <div className="mt-2">
+                    <LandUseNotice landuse={parcel.landuse} />
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <ParcelMap
           parcel={parcel}
@@ -182,32 +237,82 @@ export default function AnalysisPage() {
           focus={focus}
           busy={busy}
           onPick={(lat, lon) => loadParcel(() => api.parcelAt(lat, lon))}
-          className="print-map h-[55vh] min-h-[400px]"
+          className="print-map h-[48vh] min-h-[340px] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-auto lg:min-h-[560px]"
         />
+
+        <Card className="no-print lg:col-start-1 lg:row-start-2 lg:self-start">
+          <CardHeader>
+            <StepTitle n={2} done={!!analysis}>
+              Uprawa i data
+            </StepTitle>
+            <CardDescription>Dla jakiej uprawy ocenić ryzyko suszy? Domyślnie na dziś – możesz wybrać dowolny dzień z ostatnich 10 lat.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form
+              className="grid gap-3"
+              onSubmit={(e) => {
+                e.preventDefault()
+                runAnalysis()
+              }}
+            >
+              <label className="grid gap-1.5 text-sm">
+                <span className="font-medium">Uprawa</span>
+                <select className={cn(fieldCls, 'app-select')} value={crop} onChange={(e) => setCrop(e.target.value)}>
+                  <option value="">Wybierz uprawę…</option>
+                  {crops.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1.5 text-sm">
+                <span className="font-medium">Stan na dzień</span>
+                <Input className="h-10" type="date" value={date} min={minDateIso()} max={todayIso()} onChange={(e) => setDate(e.target.value)} />
+              </label>
+              <Button type="submit" size="lg" className="h-11 text-base" disabled={!parcel || !crop || analysing}>
+                {analysing ? (
+                  <>
+                    <Loader2 className="animate-spin" /> Analizuję…
+                  </>
+                ) : parcel?.landuse?.class === 'nierolna' ? (
+                  'Analizuj mimo to'
+                ) : (
+                  'Analizuj działkę'
+                )}
+              </Button>
+              {!parcel && <p className="text-muted-foreground text-center text-xs">Najpierw wskaż działkę.</p>}
+              <p className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
+                <span className="flex items-center gap-1">
+                  <CloudSun className="size-3" aria-hidden /> pogoda z 10 lat
+                </span>
+                <span className="flex items-center gap-1">
+                  <Layers className="size-3" aria-hidden /> gleba, teren, wody
+                </span>
+                <span className="flex items-center gap-1">
+                  <Sprout className="size-3" aria-hidden /> progi IUNG dla 14 upraw
+                </span>
+              </p>
+            </form>
+          </CardContent>
+        </Card>
       </div>
 
-      {analysing && (
-        <div className="grid gap-4" aria-busy="true">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }, (_, i) => <KpiSkeleton key={i} />)}
+      <div ref={resultsRef} className="grid scroll-mt-4 gap-4">
+        {analysing && <AnalysisProgress />}
+        {analysis && (
+          <div className="animate-fade-up grid gap-4">
+            <ReportHeader a={analysis} />
+            <AnalysisResult
+              a={analysis}
+              onLocate={(lat, lon) => {
+                setFocus({ lat, lon, t: Date.now() })
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
+            />
           </div>
-          <Card>
-            <CardContent className="pt-6">
-              <ChartSkeleton height={280} />
-            </CardContent>
-          </Card>
-        </div>
-      )}
-      {analysis && <ReportHeader a={analysis} />}
-      {analysis && (
-        <AnalysisResult
-          a={analysis}
-          onLocate={(lat, lon) => {
-            setFocus({ lat, lon, t: Date.now() })
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-          }}
-        />
-      )}
+        )}
+      </div>
     </div>
   )
 }

@@ -21,10 +21,10 @@ import pandas as pd
 
 from . import kbw
 
-# Approximate FAO-56 crop coefficients (Table 12) mapped onto the Polish season, root depth Zr [m] and
-# depletion fraction p. Monthly values; 0 = crop not in the field. Approximation – documented as such.
+# FAO-56 crop coefficients (Table 12) mapped onto the Polish season, root depth Zr [m] (Table 22, lower end – FAO:
+# "smaller values for irrigation scheduling") and depletion fraction p (Table 22). Verified against fao.org/4/x0490e on 2026-11-21. Monthly values; 0 = crop not in the field. Approximation – documented as such.
 CROP_PARAMS: dict[str, dict] = {
-    "zboza_ozime": {"kc": {3: 0.7, 4: 1.0, 5: 1.15, 6: 1.15, 7: 0.4}, "zr": 1.0, "p": 0.55},
+    "zboza_ozime": {"kc": {3: 0.7, 4: 1.0, 5: 1.15, 6: 1.15, 7: 0.4}, "zr": 1.5, "p": 0.55},
     "zboza_jare": {"kc": {4: 0.4, 5: 0.9, 6: 1.15, 7: 0.7}, "zr": 0.9, "p": 0.55},
     "kukurydza_na_ziarno": {"kc": {5: 0.3, 6: 0.7, 7: 1.2, 8: 1.2, 9: 0.8}, "zr": 1.0, "p": 0.55},
     "kukurydza_na_kiszonke": {"kc": {5: 0.3, 6: 0.7, 7: 1.2, 8: 1.15, 9: 0.9}, "zr": 1.0, "p": 0.55},
@@ -32,7 +32,7 @@ CROP_PARAMS: dict[str, dict] = {
     "ziemniak": {"kc": {5: 0.5, 6: 0.9, 7: 1.15, 8: 0.9, 9: 0.75}, "zr": 0.5, "p": 0.35},
     "burak_cukrowy": {"kc": {4: 0.35, 5: 0.6, 6: 1.0, 7: 1.2, 8: 1.2, 9: 1.0}, "zr": 0.9, "p": 0.55},
     "chmiel": {"kc": {5: 0.3, 6: 0.8, 7: 1.05, 8: 1.05, 9: 0.85}, "zr": 1.0, "p": 0.5},
-    "tyton": {"kc": {6: 0.5, 7: 1.0, 8: 1.15, 9: 0.8}, "zr": 0.8, "p": 0.5},
+    "tyton": {"kc": {6: 0.5, 7: 1.0, 8: 1.15, 9: 0.8}, "zr": 0.8, "p": 0.5},  # NOT in FAO-56 tables: assumption by analogy to vegetables
     "warzywa_gruntowe": {"kc": {5: 0.6, 6: 0.9, 7: 1.0, 8: 1.0, 9: 0.9}, "zr": 0.5, "p": 0.4},
     "krzewy_owocowe": {"kc": {4: 0.5, 5: 0.8, 6: 1.0, 7: 1.0, 8: 0.9, 9: 0.7}, "zr": 0.8, "p": 0.5},
     "drzewa_owocowe": {"kc": {4: 0.6, 5: 0.9, 6: 1.1, 7: 1.1, 8: 1.05, 9: 0.85}, "zr": 1.2, "p": 0.5},
@@ -309,7 +309,7 @@ def advise(
             "Zamiast kopać nowy zbiornik, spiętrz wodę w istniejącym rowie melioracyjnym: zastawka lub próg (sterowany odpływ). "
             "Wiosną zatrzymuje wodę z roztopów, a latem ogranicza przesuszanie pola.",
             why, "wysoki", ["NWRM (EC 2014)", "CDR 2025", "BDOT10k GUGiK"],
-            permit="Zastawka na rowie wymaga uzgodnienia z zarządcą rowu (spółka wodna, gmina lub Wody Polskie) i zwykle zgłoszenia wodnoprawnego.",
+            permit="Zastawka na rowie wymaga uzgodnienia z zarządcą rowu (spółka wodna, gmina lub Wody Polskie) oraz zgłoszenia albo pozwolenia wodnoprawnego – o formie decyduje nadzór wodny Wód Polskich.",
             location={"lat": pt[0], "lon": pt[1], "label": "Rów melioracyjny"} if pt else None,
         ))
     elif ditches and ditches.get("nearest_ditch_m") is not None and ditches["nearest_ditch_m"] <= 300:

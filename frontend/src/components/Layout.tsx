@@ -2,12 +2,11 @@ import { useEffect } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { Droplets } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useHealth } from '@/hooks/useHealth'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useSavedFields } from '@/lib/fields'
 
-/** Farmer-facing navigation. Developer pages (/demo, /records, /upload) stay reachable by URL only. */
+/** Farmer-facing navigation. */
 const links = [
   { to: '/', label: 'Analiza działki' },
   { to: '/pola', label: 'Moje pola' },
@@ -35,9 +34,7 @@ function usePrintLightTheme() {
 
 export default function Layout() {
   usePrintLightTheme()
-  const { data, error } = useHealth(15000)
   const { fields } = useSavedFields()
-  const up = !!data && !error
 
   return (
     <div className="bg-muted/30 flex min-h-screen flex-col">
@@ -79,14 +76,6 @@ export default function Layout() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-1">
-            <NavLink
-              to="/status"
-              className="text-muted-foreground hover:text-foreground flex items-center gap-2 rounded-md px-2 py-1 text-xs"
-              title="Stan usług"
-            >
-              <span className={cn('size-2 rounded-full', up ? 'bg-status-good' : 'bg-status-critical')} aria-hidden />
-              <span className="hidden sm:inline">{up ? 'Usługi działają' : 'Brak połączenia z serwerem'}</span>
-            </NavLink>
             <ThemeToggle />
           </div>
         </div>

@@ -132,8 +132,6 @@ type Props = {
   /** when set (new object each time), the map flies to this point */
   focus?: { lat: number; lon: number; t: number; zoom?: number } | null
   onPick: (lat: number, lon: number) => void
-  /** the point just clicked – shown immediately while the parcel is being looked up */
-  pending?: { lat: number; lon: number } | null
   busy?: boolean
   className?: string
 }
@@ -154,17 +152,26 @@ function FlyTo({ focus }: { focus: Props['focus'] }) {
   return null
 }
 
+/**
+ * Move the map only when needed: if the new parcel is already well inside the view at a zoom where parcel
+ * boundaries are drawn, leave the map alone. Otherwise show it with its neighbours around (not a tight zoom).
+ */
 function FitToParcel({ parcel }: { parcel: Parcel | null }) {
   const map = useMap()
+  const id = parcel?.id
   useEffect(() => {
     if (!parcel) return
     const bounds = L.geoJSON(parcel.geometry).getBounds()
-    map.flyToBounds(bounds, { padding: [40, 40], maxZoom: 18, duration: 0.6 })
-  }, [parcel, map])
+    const view = map.getBounds().pad(-0.1) // ignore a 10% margin at the edges
+    if (map.getZoom() >= PARCELS_MIN_ZOOM && view.contains(bounds)) return
+    const zoom = Math.min(17, Math.max(PARCELS_MIN_ZOOM + 1, Math.floor(map.getBoundsZoom(bounds.pad(1.5)))))
+    map.flyTo(bounds.getCenter(), zoom, { duration: map.getZoom() < 12 ? 1.2 : 0.6 })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, map])
   return null
 }
 
-export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating, onPick, pending, busy, className }: Props) {
+export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating, onPick, busy, className }: Props) {
   const [zoom, setZoom] = useState(6)
   const [orthoReady, setOrthoReady] = useState(false)
   const st = LANDUSE_STYLE[parcel?.landuse?.class ?? 'nieznana']
@@ -176,8 +183,8 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
         zoom={6}
         minZoom={5}
         maxZoom={20}
-        zoomSnap={0.5}
-        wheelPxPerZoomLevel={90}
+        zoomSnap={1} // whole levels: scaled tiles leave white seams through the parcel-line filter
+        wheelPxPerZoomLevel={120}
         className="h-full w-full"
         style={{ cursor: busy ? 'progress' : 'pointer' }}
       >
@@ -204,9 +211,7 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
             />
           </>
         )}
-        {pending && (
-          <CircleMarker center={[pending.lat, pending.lon]} radius={7} interactive={false} pathOptions={{ color: '#fff', weight: 3, fillColor: MARKER, fillOpacity: 1 }} />
-        )}
+
         {markers?.map((m) => (
           <CircleMarker key={`${m.lat},${m.lon}`} center={[m.lat, m.lon]} radius={8} pathOptions={{ color: '#fff', weight: 3, fillColor: MARKER, fillOpacity: 1 }}>
             <Tooltip direction="top" offset={[0, -8]} permanent>{m.label}</Tooltip>
@@ -243,8 +248,11 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
         </div>
       )}
       {busy && (
-        <div className="pointer-events-none absolute right-3 bottom-8 z-[1000] rounded-full bg-black/70 px-3 py-1.5 text-xs text-white">
-          Szukam działki…
+        // blocks further clicks until the lookup finishes
+        <div className="bg-background/20 absolute inset-0 z-[1000] grid cursor-progress place-items-center" aria-live="polite">
+          <span className="bg-background text-foreground flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold shadow-lg">
+            <Loader2 className="text-primary size-4 animate-spin" aria-hidden /> Szukam działki…
+          </span>
         </div>
       )}
       <div className="pointer-events-none absolute bottom-8 left-3 z-[1000] flex flex-wrap gap-x-3 gap-y-1 rounded-md bg-background/90 px-2 py-1 text-xs text-foreground">

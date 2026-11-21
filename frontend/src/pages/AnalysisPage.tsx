@@ -16,6 +16,7 @@ import { AnalysisProgress } from '@/components/analysis/AnalysisProgress'
 import { ReportHeader } from '@/components/analysis/ReportHeader'
 import { formatNumber } from '@/lib/format'
 import { useSavedFields } from '@/lib/fields'
+import { containsPoint } from '@/lib/geo'
 import { cn } from '@/lib/utils'
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
@@ -83,8 +84,6 @@ export default function AnalysisPage() {
   const { fields, save, remove, isSaved, setCrop: rememberCrop } = useSavedFields()
   const [userPos, setUserPos] = useState<{ lat: number; lon: number; accuracy: number } | null>(null)
   const [locating, setLocating] = useState(false)
-  /** where the farmer just clicked – drawn at once, before ULDK answers */
-  const [pending, setPending] = useState<{ lat: number; lon: number } | null>(null)
 
   /** Farmers often check a field while standing on it: show where they are and offer the parcel under them. */
   const locate = () => {
@@ -143,7 +142,6 @@ export default function AnalysisPage() {
       toast.error(e instanceof Error ? e.message : 'Nie udało się pobrać działki')
     } finally {
       setBusy(false)
-      setPending(null)
     }
   }
 
@@ -200,7 +198,10 @@ export default function AnalysisPage() {
               value={query}
               onChange={setQuery}
               busy={busy}
-              onParcelId={(id) => loadParcel(() => api.parcelById(id))}
+              onParcelId={(id) => {
+                if (busy || id.trim() === parcel?.id) return
+                loadParcel(() => api.parcelById(id))
+              }}
               onPlace={(p) => {
                 setFocus({ lat: p.lat, lon: p.lon, zoom: p.zoom, t: Date.now() })
                 toast.info(`${p.label}: teraz kliknij swoje pole na mapie`, { description: 'Granice działek pojawią się po przybliżeniu.' })
@@ -301,9 +302,9 @@ export default function AnalysisPage() {
           onLocate={locate}
           locating={locating}
           busy={busy}
-          pending={pending}
           onPick={(lat, lon) => {
-            setPending({ lat, lon })
+            // one lookup at a time; clicking the parcel that is already selected does nothing
+            if (busy || (parcel && containsPoint(parcel.geometry, lat, lon))) return
             loadParcel(() => api.parcelAt(lat, lon))
           }}
           className="print-map h-[48vh] min-h-[340px] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-auto lg:min-h-[560px]"

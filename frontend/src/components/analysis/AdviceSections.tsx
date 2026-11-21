@@ -21,11 +21,11 @@ export function CausesSection({ a }: { a: Analysis }) {
       <CardHeader>
         <CardTitle>Przyczyny</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-3 md:grid-cols-2">
+      <CardContent className="grid gap-x-10 gap-y-7 md:grid-cols-2">
         {[...a.causes].sort((x, y) => CAUSE_STYLE[x.status].order - CAUSE_STYLE[y.status].order).map((c) => {
           const st = CAUSE_STYLE[c.status]
           return (
-            <div key={c.id} className="rounded-xl border p-4">
+            <div key={c.id}>
               <p className="type-title-sm">{c.title}</p>
               <Badge variant={st.badge} className={cn(CHIP, 'mt-2 mb-3')}>
                 <st.icon aria-hidden /> {st.label}
@@ -54,7 +54,7 @@ const PRIO: Record<Recommendation['priority'], 'default' | 'secondary' | 'outlin
 
 function RecItem({ r, onLocate }: { r: Recommendation; onLocate?: (lat: number, lon: number) => void }) {
   return (
-    <div className={cn('bg-card rounded-xl border p-4', r.priority === 'wysoki' && 'border-primary/50')}>
+    <div>
       <p className="type-title-sm">{r.title}</p>
       <Badge variant={PRIO[r.priority]} className={cn(CHIP, 'mt-2 mb-3', r.priority === 'wysoki' && 'bg-primary text-primary-foreground')}>
         Priorytet {r.priority}
@@ -70,7 +70,7 @@ function RecItem({ r, onLocate }: { r: Recommendation; onLocate?: (lat: number, 
         <AccordionItem value="why" className="border-none">
           <AccordionTrigger className="text-primary py-1.5 text-xs">Dlaczego? ({r.why.length})</AccordionTrigger>
           <AccordionContent keepMounted className="pb-1">
-            <ul className="text-muted-foreground bg-muted/50 list-disc space-y-0.5 rounded-md py-2 pr-2 pl-6 text-xs">
+            <ul className="text-muted-foreground list-disc space-y-0.5 pl-5 text-sm">
               {r.why.map((w) => (
                 <li key={w}>{w}</li>
               ))}
@@ -101,14 +101,14 @@ export function RecommendationsSection({ a, onLocate }: { a: Analysis; onLocate?
       <CardHeader>
         <CardTitle>Co możesz zrobić</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-5">
+      <CardContent className="grid gap-8">
         {STAGES.map((s) => {
           const items = a.recommendations.filter((r) => r.stage === s.id)
           return (
             <section key={s.id}>
-              <h3 className="mb-2 text-base font-semibold">{s.title}</h3>
+              <h3 className="text-muted-foreground mb-4 border-b pb-2 text-sm font-bold">{s.title}</h3>
               {items.length ? (
-                <div className="grid gap-2 lg:grid-cols-2">
+                <div className="grid gap-x-10 gap-y-7 lg:grid-cols-2">
                   {items.map((r) => (
                     <RecItem key={r.id} r={r} onLocate={onLocate} />
                   ))}
@@ -145,8 +145,8 @@ export function CropComparison({ a }: { a: Analysis }) {
               <span className="truncate">{r.name}{r.crop === a.crop.id && ' (wybrana)'}</span>
               <span className="bg-muted h-2.5 overflow-hidden rounded-full">
                 <span
-                  className="block h-full rounded-full"
-                  style={{ width: `${((r.drought_years ?? 0) / max) * 100}%`, background: 'var(--status-critical)', minWidth: r.drought_years ? 6 : 0 }}
+                  className={cn('block h-full rounded-full', r.crop === a.crop.id ? 'bg-primary' : 'bg-outline')}
+                  style={{ width: `${((r.drought_years ?? 0) / max) * 100}%`, minWidth: r.drought_years ? 6 : 0 }}
                 />
               </span>
               <span className="text-muted-foreground tabular-nums">{r.drought_years}/{r.n}</span>

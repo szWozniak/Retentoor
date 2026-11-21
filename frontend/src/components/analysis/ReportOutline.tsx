@@ -50,7 +50,7 @@ export function ReportOutline({ items }: { items: OutlineItem[] }) {
   const progress = items.length > 1 ? (active / (items.length - 1)) * 100 : 0
 
   return (
-    <nav aria-label="Spis treści raportu" className="no-print sticky top-6 hidden self-start xl:block">
+    <nav aria-label="Spis treści raportu" className="no-print sticky top-6 hidden self-start select-none xl:block">
       <ol className="relative">
         {/* track + progress */}
         <span aria-hidden className="bg-border absolute top-2 bottom-2 left-[9px] w-px" />

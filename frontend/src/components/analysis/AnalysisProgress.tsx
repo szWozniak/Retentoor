@@ -26,7 +26,7 @@ export function AnalysisProgress() {
   const current = STEPS.reduce((acc, s, i) => (t >= s.at ? i : acc), 0)
 
   return (
-    <Card className="animate-fade-up" aria-live="polite" aria-busy="true">
+    <Card className="animate-fade-up select-none" aria-live="polite" aria-busy="true">
       <CardContent className="grid gap-4 py-2 sm:grid-cols-[1fr_auto] sm:items-center">
         <div>
           <p className="font-semibold">Analizuję działkę…</p>
@@ -45,7 +45,7 @@ export function AnalysisProgress() {
                 </span>
                 <span>
                   {s.label}
-                  <span className="text-muted-foreground ml-2 text-xs">{s.src}</span>
+                  <span className="text-outline ml-2 text-xs">{s.src}</span>
                 </span>
               </li>
             ))}

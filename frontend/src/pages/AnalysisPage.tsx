@@ -41,7 +41,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function StepTitle({ n, done, children }: { n: number; done: boolean; children: ReactNode }) {
   return (
-    <CardTitle className="flex items-center gap-2.5">
+    <CardTitle className="flex items-center gap-2.5 select-none">
       <span
         className={cn(
           'grid size-7 shrink-0 place-items-center rounded-full text-sm font-semibold transition-colors',

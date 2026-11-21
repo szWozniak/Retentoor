@@ -44,7 +44,7 @@ export default function Layout() {
       >
         Przejdź do treści
       </a>
-      <header className="no-print bg-background border-b">
+      <header className="no-print bg-background border-b select-none">
         <div className="mx-auto flex max-w-page flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
           <Link to="/" className="flex items-center gap-2.5" aria-label="Zatrzymaj Wodę – strona główna">
             <span className="bg-primary text-primary-foreground grid size-9 place-items-center rounded-md">

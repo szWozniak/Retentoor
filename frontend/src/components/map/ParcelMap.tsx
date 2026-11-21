@@ -4,6 +4,7 @@ import { LocateFixed, Loader2 } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { LandUse, Parcel } from '@/api'
+import { cn } from '@/lib/utils'
 
 /**
  * Map for picking a parcel:
@@ -174,10 +175,11 @@ function FitToParcel({ parcel }: { parcel: Parcel | null }) {
 export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating, onPick, busy, className }: Props) {
   const [zoom, setZoom] = useState(6)
   const [orthoReady, setOrthoReady] = useState(false)
+  const [showDitches, setShowDitches] = useState(true)
   const st = LANDUSE_STYLE[parcel?.landuse?.class ?? 'nieznana']
 
   return (
-    <div className={`relative overflow-hidden rounded-xl border ${className ?? ''}`}>
+    <div className={`relative overflow-hidden rounded-xl border select-none ${className ?? ''}`}>
       <MapContainer
         center={POLAND_CENTER}
         zoom={6}
@@ -186,7 +188,7 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
         zoomSnap={1} // whole levels: scaled tiles leave white seams through the parcel-line filter
         wheelPxPerZoomLevel={120}
         className="h-full w-full"
-        style={{ cursor: busy ? 'progress' : 'pointer' }}
+        style={{ cursor: 'pointer' }}
       >
         <ParcelBoundaries />
         <TileLayer
@@ -198,7 +200,7 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
           eventHandlers={{ load: () => setOrthoReady(true) }}
           attribution='Ortofotomapa &copy; <a href="https://www.geoportal.gov.pl">GUGiK</a>'
         />
-        {orthoReady && <Ditches />}
+        {orthoReady && showDitches && <Ditches />}
         {parcel && (
           <>
             {/* white halo keeps the outline readable on any orthophoto */}
@@ -242,6 +244,20 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
           {locating ? <Loader2 className="size-4 animate-spin" /> : <LocateFixed className="size-4" />}
         </button>
       )}
+      {zoom >= PARCELS_MIN_ZOOM && (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showDitches}
+          onClick={() => setShowDitches((v) => !v)}
+          className="bg-background text-foreground hover:bg-muted absolute top-3 right-3 z-[1000] flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-bold"
+        >
+          <span className={cn('relative h-4 w-7 shrink-0 rounded-full transition-colors', showDitches ? 'bg-primary' : 'bg-outline')} aria-hidden>
+            <span className={cn('absolute top-0.5 size-3 rounded-full bg-white transition-all', showDitches ? 'left-3.5' : 'left-0.5')} />
+          </span>
+          Rowy melioracyjne
+        </button>
+      )}
       {zoom < PARCELS_MIN_ZOOM && (
         <div className="pointer-events-none absolute top-3 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-black/70 px-3 py-1.5 text-center text-xs text-white">
           Przybliż mapę, aby zobaczyć granice działek, albo kliknij w swoje pole
@@ -249,7 +265,7 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
       )}
       {busy && (
         // blocks further clicks until the lookup finishes
-        <div className="bg-background/20 absolute inset-0 z-[1000] grid cursor-progress place-items-center" aria-live="polite">
+        <div className="bg-background/20 absolute inset-0 z-[1000] grid place-items-center" aria-live="polite">
           <span className="bg-background text-foreground flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold shadow-lg">
             <Loader2 className="text-primary size-4 animate-spin" aria-hidden /> Szukam działki…
           </span>

@@ -147,7 +147,7 @@ function HistoryGrid({ a }: { a: Analysis }) {
   if (!periods.length) return null
   return (
     <div className="overflow-x-auto">
-      <table className="w-full table-fixed border-separate border-spacing-0.5 text-xs">
+      <table className="w-full table-fixed select-none border-separate border-spacing-0.5 text-xs">
         <thead>
           <tr>
             <th className="text-muted-foreground w-12 pr-2 text-left font-normal">Rok</th>

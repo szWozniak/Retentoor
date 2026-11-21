@@ -1,32 +1,3 @@
-export type Record = {
-  id: number
-  title: string
-  content: string
-  label: string | null
-  source: string | null
-  created_at: string
-}
-
-export type RecordInput = Pick<Record, 'title' | 'content'> & Partial<Pick<Record, 'label' | 'source'>>
-
-export type UploadResult = {
-  id: string
-  filename: string
-  size: number
-  preview:
-    | { rows: number; columns: string[]; head: { [key: string]: unknown }[] }
-    | { error: string }
-    | null
-}
-
-export type Health = {
-  status: 'ok' | 'degraded'
-  app: string
-  db: 'ok' | 'error'
-  uptime_s: number
-  server_time: string
-}
-
 export type Parcel = {
   id: string
   voivodeship: string
@@ -167,31 +138,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (res.status === 204 ? undefined : await res.json()) as T
 }
 
-const json = (method: string, body: unknown): RequestInit => ({
-  method,
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body),
-})
-
 export const api = {
-  health: () => request<Health>('/health'),
   parcelById: (id: string) => request<Parcel>(`/parcels/by-id?id=${encodeURIComponent(id.trim())}&landuse=false`),
   parcelAt: (lat: number, lon: number) => request<Parcel>(`/parcels/at?lat=${lat}&lon=${lon}&landuse=false`),
   landuse: (id: string) => request<LandUse>(`/parcels/landuse?id=${encodeURIComponent(id)}`),
   crops: () => request<Crop[]>('/analysis/crops'),
   geocode: (q: string, full = false) => request<Place[]>(`/geocode?q=${encodeURIComponent(q)}${full ? '&full=true' : ''}`),
-  saveReport: (parcelId: string, crop: string, date: string) =>
-    request<{ id: string }>(`/reports?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`, { method: 'POST' }),
-  getReport: (id: string) => request<{ id: string; created_at: string; analysis: Analysis }>(`/reports/${encodeURIComponent(id)}`),
   analyse: (parcelId: string, crop: string, date: string) =>
     request<Analysis>(`/analysis?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`),
-  listRecords: (q = '') => request<Record[]>(`/records${q ? `?q=${encodeURIComponent(q)}` : ''}`),
-  createRecord: (data: RecordInput) => request<Record>('/records', json('POST', data)),
-  updateRecord: (id: number, data: Partial<RecordInput>) => request<Record>(`/records/${id}`, json('PATCH', data)),
-  deleteRecord: (id: number) => request<void>(`/records/${id}`, { method: 'DELETE' }),
-  upload: (file: File) => {
-    const form = new FormData()
-    form.append('file', file)
-    return request<UploadResult>('/files', { method: 'POST', body: form })
-  },
 }

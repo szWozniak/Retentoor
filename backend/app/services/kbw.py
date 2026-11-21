@@ -58,15 +58,54 @@ def threshold(crop: str, category: str, period: int) -> int | str | None:
     return table()["crops"][crop]["thresholds"][category][period]
 
 
+def _prep(df: pd.DataFrame) -> dict:
+    """Cumulative sums for O(1) window sums (crop comparison evaluates ~2000 windows per request).
+    Stored in df.attrs, so it is built once per meteo DataFrame."""
+    pre = df.attrs.get("_kbw_prep")
+    # pandas copies attrs to slices/derived frames – only trust a prep built for this very object
+    if pre is None or pre["owner"] != id(df) or len(pre["t"]) != len(df):
+        p = df["P"].to_numpy(dtype=float)
+        e = df["ET0"].to_numpy(dtype=float)
+        valid = ~(np.isnan(p) | np.isnan(e))
+        z = lambda a: np.concatenate(([0.0], np.cumsum(a)))  # noqa: E731
+        pre = {
+            "owner": id(df),
+            "t": df.index.values,
+            "valid_n": z(valid.astype(float)),
+            "pe_valid": z(np.where(valid, p - e, 0.0)),
+            "p": z(np.nan_to_num(p)),
+            "e": z(np.nan_to_num(e)),
+            "n": z(np.ones(len(p))),
+        }
+        df.attrs["_kbw_prep"] = pre
+    return pre
+
+
+def _span(pre: dict, start: date, end: date) -> tuple[int, int]:
+    i = int(np.searchsorted(pre["t"], np.datetime64(start), "left"))
+    j = int(np.searchsorted(pre["t"], np.datetime64(end), "right"))
+    return i, j
+
+
 def kbw_sum(df: pd.DataFrame, start: date, end: date) -> tuple[float | None, float]:
     """Returns (KBW, coverage 0..1). KBW is None when < 90% of days have data."""
-    w = df.loc[pd.Timestamp(start) : pd.Timestamp(end)]
+    pre = _prep(df)
+    i, j = _span(pre, start, end)
     expected = (end - start).days + 1
-    valid = w[["P", "ET0"]].dropna()
-    cov = len(valid) / expected if expected else 0
+    n_valid = pre["valid_n"][j] - pre["valid_n"][i]
+    cov = n_valid / expected if expected else 0
     if cov < 0.9:
         return None, cov
-    return round(float(valid["P"].sum() - valid["ET0"].sum()), 1), cov
+    return round(float(pre["pe_valid"][j] - pre["pe_valid"][i]), 1), cov
+
+
+def window_sums(df: pd.DataFrame, start: date, end: date) -> tuple[float | None, float | None]:
+    """(Σ P, Σ ET0) over the window, None when there are no rows."""
+    pre = _prep(df)
+    i, j = _span(pre, start, end)
+    if j <= i:
+        return None, None
+    return round(float(pre["p"][j] - pre["p"][i]), 1), round(float(pre["e"][j] - pre["e"][i]), 1)
 
 
 @dataclass
@@ -90,14 +129,14 @@ def assess_year(df: pd.DataFrame, crop: str, category: str, year: int, until: da
             continue  # period not finished by analysis date
         k, _ = kbw_sum(df, s, e)
         thr = threshold(crop, category, per.index)
-        w = df.loc[pd.Timestamp(s) : pd.Timestamp(e)]
+        psum, esum = window_sums(df, s, e)
         assessable = isinstance(thr, int) and k is not None
         out.append(PeriodResult(
             period=per.label, start=s.isoformat(), end=e.isoformat(), kbw=k, threshold=thr,
             drought=(k < thr) if assessable else None,
             margin=round(k - thr, 1) if assessable else None,
-            p=round(float(w["P"].sum()), 1) if len(w) else None,
-            et0=round(float(w["ET0"].sum()), 1) if len(w) else None,
+            p=psum,
+            et0=esum,
         ))
     return out
 

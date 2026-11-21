@@ -11,7 +11,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<AnalysisPage />} />
           <Route path="pola" element={<FieldsPage />} />
-          <Route path="raport/:id" element={<ReportPage />} />
+          <Route path="raport" element={<ReportPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -27,7 +27,7 @@ export const LANDUSE_STYLE: Record<LandUse['class'], { stroke: string; fill: str
   rolna: { stroke: '#2b6a46', fill: '#aff1c3' }, // primary / primary-container
   mieszana: { stroke: '#7d5800', fill: '#ffdea9' }, // warning
   nierolna: { stroke: '#ba1a1a', fill: '#ffdad6' }, // error
-  nieznana: { stroke: '#2b6a46', fill: '#ffffff' }, // land use still loading / unknown
+  nieznana: { stroke: '#717971', fill: '#dfe4dd' }, // land use still loading / unknown: neutral grey (outline role)
 }
 const MARKER = '#2b6a46'
 

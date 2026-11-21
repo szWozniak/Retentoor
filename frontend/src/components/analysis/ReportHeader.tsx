@@ -1,39 +1,26 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Link2, Printer, Save } from 'lucide-react'
+import { Link2, Printer } from 'lucide-react'
 import type { Analysis } from '@/api'
-import { api } from '@/api'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatDateTime } from '@/lib/format'
 import { Logo } from '@/components/Logo'
 
-/** Title block of the report + actions (print/PDF, save in the system). Actions are hidden in print. */
-export function ReportHeader({ a, savedId, createdAt }: { a: Analysis; savedId?: string; createdAt?: string }) {
-  const [saving, setSaving] = useState(false)
-  const [id, setId] = useState(savedId)
-  const [generatedAt] = useState(() => createdAt ?? new Date().toISOString())
+/** Link that recomputes the same report (parcel + crop + date) – nothing is stored on the server. */
+const reportLink = (a: Analysis) =>
+  `${window.location.origin}/raport?dzialka=${encodeURIComponent(a.parcel.id)}&uprawa=${a.crop.id}&data=${a.analysis_date}`
 
-  const link = id ? `${window.location.origin}/raport/${id}` : null
+/** Title block of the report + actions (print/PDF, copy link). Actions are hidden in print. */
+export function ReportHeader({ a }: { a: Analysis }) {
+  const [generatedAt] = useState(() => new Date().toISOString())
+  const link = reportLink(a)
 
-  const copy = async (url: string, okMsg: string) => {
+  const copy = async () => {
     try {
-      await navigator.clipboard.writeText(url)
-      toast.success(okMsg, { description: url })
+      await navigator.clipboard.writeText(link)
+      toast.success('Link do raportu skopiowany', { description: 'Otwarcie linku przelicza raport z aktualnymi danymi.' })
     } catch {
-      toast.info(url)
-    }
-  }
-
-  const save = async () => {
-    setSaving(true)
-    try {
-      const r = await api.saveReport(a.parcel.id, a.crop.id, a.analysis_date)
-      setId(r.id)
-      await copy(`${window.location.origin}/raport/${r.id}`, 'Raport zapisany – link skopiowany')
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Nie udało się zapisać raportu')
-    } finally {
-      setSaving(false)
+      toast.info(link)
     }
   }
 
@@ -53,22 +40,16 @@ export function ReportHeader({ a, savedId, createdAt }: { a: Analysis; savedId?:
         </p>
         <p className="text-muted-foreground text-xs">
           Wygenerowano {formatDateTime(generatedAt)}
-          {link && <span className="print-only"> · {link}</span>}
+          <span className="print-only"> · {link}</span>
         </p>
       </div>
       <div className="no-print flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => window.print()}>
           <Printer /> Drukuj / PDF
         </Button>
-        {id ? (
-          <Button variant="outline" onClick={() => copy(link!, 'Link skopiowany')}>
-            <Link2 /> Kopiuj link do raportu
-          </Button>
-        ) : (
-          <Button onClick={save} disabled={saving}>
-            <Save /> {saving ? 'Zapisuję…' : 'Zapisz raport'}
-          </Button>
-        )}
+        <Button variant="outline" onClick={copy}>
+          <Link2 /> Kopiuj link do raportu
+        </Button>
       </div>
     </div>
   )

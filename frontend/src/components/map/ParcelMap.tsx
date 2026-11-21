@@ -24,12 +24,12 @@ const POLAND_CENTER: L.LatLngTuple = [52.1, 19.4]
 
 /** Same roles as the UI (light-theme M3 values): dark stroke = colour role, light fill = its container. */
 export const LANDUSE_STYLE: Record<LandUse['class'], { stroke: string; fill: string }> = {
-  rolna: { stroke: '#007a33', fill: '#c4f2cd' }, // primary / primary-container
+  rolna: { stroke: '#15803d', fill: '#dcfce7' }, // primary / primary-container
   mieszana: { stroke: '#7d5800', fill: '#ffdea9' }, // warning
   nierolna: { stroke: '#ba1a1a', fill: '#ffdad6' }, // error
-  nieznana: { stroke: '#6f7770', fill: '#e1e5e1' }, // land use still loading / unknown: neutral grey (outline role)
+  nieznana: { stroke: '#737373', fill: '#e8e8e8' }, // land use still loading / unknown: neutral grey (outline role)
 }
-const MARKER = '#007a33'
+const MARKER = '#15803d'
 
 /**
  * Loading priority on a slow connection: parcel grid (high) → orthophoto (normal) → ditches (low, added only after

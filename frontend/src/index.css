@@ -8,8 +8,8 @@
 
 /* ============================================================================
    Design system – see docs/design-system.md
-   Colour roles: Material 3 roles, brand green taken from the KOWR logo
-   (grass #007a33, bottle #004830), near-neutral surfaces, small radii. Typography and
+   Colour roles: Material 3 roles, clean green #15803d (close to the KOWR logo),
+   white background, neutral greys, small radii. Typography and
    accessibility rules follow Polish public-service practice (gov.pl): Lato,
    two weights (400/700), body >= 15 px, strong visible focus, underlined links.
    shadcn/ui variable names are kept and mapped onto the M3 roles.
@@ -111,34 +111,34 @@
   --radius: 0.25rem;
 
   /* M3 light scheme */
-  --background: #f7f9f7;            /* surface */
-  --foreground: #161b17;            /* on-surface */
+  --background: #ffffff;            /* surface: plain white */
+  --foreground: #1b1b1b;            /* on-surface */
   --card: #ffffff;                  /* surface-container-lowest */
-  --card-foreground: #161b17;
+  --card-foreground: #1b1b1b;
   --popover: #ffffff;
-  --popover-foreground: #161b17;
-  --primary: #007a33;
+  --popover-foreground: #1b1b1b;
+  --primary: #15803d;
   --primary-foreground: #ffffff;
-  --primary-container: #c4f2cd;
-  --on-primary-container: #004830;
-  --secondary: #dfeee2;             /* secondary-container */
-  --secondary-foreground: #2f4535;
-  --muted: #eef1ee;                 /* surface-container */
-  --muted-foreground: #3f4741;      /* on-surface-variant */
-  --accent: #e6ebe6;                /* surface-container-high (hover) */
-  --accent-foreground: #161b17;
+  --primary-container: #dcfce7;
+  --on-primary-container: #14532d;
+  --secondary: #ededed;             /* secondary-container */
+  --secondary-foreground: #3d3d3d;
+  --muted: #f2f2f2;                 /* surface-container */
+  --muted-foreground: #4d4d4d;      /* on-surface-variant */
+  --accent: #ebebeb;                /* surface-container-high (hover) */
+  --accent-foreground: #1b1b1b;
   --destructive: #ba1a1a;
-  --border: #c4cbc5;                /* outline-variant */
-  --input: #6f7770;                 /* outline – form fields need >= 3:1 */
-  --outline: #6f7770;
-  --ring: #007a33;
-  --surface-container-low: #f2f5f2;
-  --surface-container: #eef1ee;
-  --surface-container-high: #e6ebe6;
+  --border: #d6d6d6;                /* outline-variant */
+  --input: #737373;                 /* outline – form fields need >= 3:1 */
+  --outline: #737373;
+  --ring: #15803d;
+  --surface-container-low: #f7f7f7;
+  --surface-container: #f2f2f2;
+  --surface-container-high: #e8e8e8;
 
-  --success: #007a33;               /* = primary: one brand green everywhere */
-  --success-container: #c4f2cd;     /* = primary-container */
-  --on-success-container: #004830;
+  --success: #15803d;               /* = primary: one brand green everywhere */
+  --success-container: #dcfce7;     /* = primary-container */
+  --on-success-container: #14532d;
   --warning: #7d5800;
   --warning-container: #ffdea9;
   --on-warning-container: #271900;
@@ -160,13 +160,13 @@
   --status-critical: #d03b3b;
 
   --sidebar: #f2f5f2;
-  --sidebar-foreground: #161b17;
-  --sidebar-primary: #007a33;
+  --sidebar-foreground: #1b1b1b;
+  --sidebar-primary: #15803d;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #e6ebe6;
-  --sidebar-accent-foreground: #161b17;
+  --sidebar-accent-foreground: #1b1b1b;
   --sidebar-border: #c4cbc5;
-  --sidebar-ring: #007a33;
+  --sidebar-ring: #15803d;
 }
 
 .dark {
@@ -177,10 +177,10 @@
   --card-foreground: #e1e5e1;
   --popover: #232824;               /* surface-container-high */
   --popover-foreground: #e1e5e1;
-  --primary: #5fd67f;
-  --primary-foreground: #00391a;
-  --primary-container: #00522a;
-  --on-primary-container: #b9f2c4;
+  --primary: #4ade80;
+  --primary-foreground: #052e16;
+  --primary-container: #14532d;
+  --on-primary-container: #dcfce7;
   --secondary: #2c3d31;
   --secondary-foreground: #d4ebd8;
   --muted: #1b201c;
@@ -191,12 +191,12 @@
   --border: #3f4741;
   --input: #8b938c;
   --outline: #8b938c;
-  --ring: #5fd67f;
+  --ring: #4ade80;
   --surface-container-low: #171b18;
   --surface-container: #1b201c;
   --surface-container-high: #232824;
 
-  --success: #5fd67f;               /* = primary */
+  --success: #4ade80;               /* = primary */
   --success-container: #16291c;     /* surface tinted with primary – quiet on dark */
   --on-success-container: #e1e5e1;
   --warning: #f9bc46;
@@ -217,12 +217,12 @@
 
   --sidebar: #171b18;
   --sidebar-foreground: #e1e5e1;
-  --sidebar-primary: #5fd67f;
-  --sidebar-primary-foreground: #00391a;
+  --sidebar-primary: #4ade80;
+  --sidebar-primary-foreground: #052e16;
   --sidebar-accent: #232824;
   --sidebar-accent-foreground: #e1e5e1;
   --sidebar-border: #3f4741;
-  --sidebar-ring: #5fd67f;
+  --sidebar-ring: #4ade80;
 }
 
 @layer base {

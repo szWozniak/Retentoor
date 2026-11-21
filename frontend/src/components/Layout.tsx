@@ -38,7 +38,7 @@ export default function Layout() {
   const { fields } = useSavedFields()
 
   return (
-    <div className="bg-muted/30 flex min-h-screen flex-col">
+    <div className="bg-background flex min-h-screen flex-col">
       <a
         href="#main"
         className="bg-primary text-primary-foreground sr-only z-50 rounded-md px-3 py-2 focus:not-sr-only focus:absolute focus:top-2 focus:left-2"

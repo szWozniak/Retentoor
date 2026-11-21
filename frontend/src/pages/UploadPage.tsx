@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { api, type UploadResult } from '@/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -14,9 +15,13 @@ export default function UploadPage() {
     setBusy(true)
     setError(null)
     try {
-      setResult(await api.upload(file))
+      const res = await api.upload(file)
+      setResult(res)
+      if (res.preview && 'error' in res.preview) toast.warning('Wgrano plik, ale nie udało się go sparsować')
+      else toast.success('Wgrano plik', { description: res.filename })
     } catch (e) {
       setError(String(e))
+      toast.error('Nie udało się wgrać pliku')
     } finally {
       setBusy(false)
     }

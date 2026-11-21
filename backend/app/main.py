@@ -9,7 +9,7 @@ from sqlmodel import Session
 
 from .config import settings
 from .db import engine, init_db
-from .routers import files, records
+from .routers import analysis, files, parcels, records
 
 
 @asynccontextmanager
@@ -28,6 +28,8 @@ app.add_middleware(
 
 app.include_router(records.router, prefix="/api")
 app.include_router(files.router, prefix="/api")
+app.include_router(parcels.router, prefix="/api")
+app.include_router(analysis.router, prefix="/api")
 
 
 STARTED_AT = time.time()

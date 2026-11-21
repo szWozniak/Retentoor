@@ -21,6 +21,16 @@ class Record(RecordBase, table=True):
     created_at: datetime = Field(default_factory=_now)
 
 
+class ApiCache(SQLModel, table=True):
+    """Raw responses from external data APIs (ULDK, IUNG, Open-Meteo, ...).
+    The analysis is always recomputed from these; fetched_at feeds the report's 'data date'."""
+
+    source: str = Field(primary_key=True)  # e.g. "uldk"
+    key: str = Field(primary_key=True)  # e.g. "id:260104_5.0016.78"
+    payload: str  # raw response body
+    fetched_at: datetime = Field(default_factory=_now)
+
+
 class RecordCreate(RecordBase):
     pass
 

@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, CircleHelp, CircleMinus, Droplet, FileWarning, Leaf, MapPin, Mountain, Sprout, Tractor } from 'lucide-react'
 import type { Analysis, Cause, Recommendation } from '@/api'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -59,14 +60,24 @@ function RecItem({ r, onLocate }: { r: Recommendation; onLocate?: (lat: number, 
         <Badge variant={PRIO[r.priority]}>{r.priority === 'wysoki' ? 'zrób w pierwszej kolejności' : `priorytet: ${r.priority}`}</Badge>
       </div>
       <p className="text-sm">{r.action}</p>
-      <div className="bg-muted/60 mt-2 rounded-md p-2 text-xs">
-        <p className="mb-0.5 font-medium">Dlaczego (dane dla tej działki):</p>
-        <ul className="text-muted-foreground list-disc space-y-0.5 pl-4">
-          {r.why.map((w) => (
-            <li key={w}>{w}</li>
-          ))}
-        </ul>
-      </div>
+      {/* print/PDF: justification always visible */}
+      <ul className="print-block text-muted-foreground mt-2 list-disc space-y-0.5 pl-5 text-xs">
+        {r.why.map((w) => (
+          <li key={w}>{w}</li>
+        ))}
+      </ul>
+      <Accordion className="no-print mt-1">
+        <AccordionItem value="why" className="border-none">
+          <AccordionTrigger className="text-primary py-1.5 text-xs">Dlaczego? Dane dla tej działki ({r.why.length})</AccordionTrigger>
+          <AccordionContent keepMounted className="pb-1">
+            <ul className="text-muted-foreground bg-muted/50 list-disc space-y-0.5 rounded-md py-2 pr-2 pl-6 text-xs">
+              {r.why.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
       <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         <span>Podstawa: {r.basis.join(' · ')}</span>
         {r.location && onLocate && (

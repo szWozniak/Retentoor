@@ -407,3 +407,32 @@ select.app-select {
 .grid > * {
   min-width: 0;
 }
+
+/* Leaflet panes use z-index 400–1000: isolate the map so shadcn popovers (z-50, portalled) stay on top */
+.leaflet-container {
+  isolation: isolate;
+  z-index: 0;
+}
+
+@media print {
+  [data-slot='accordion-content'],
+  [data-slot='accordion-content'] > div {
+    display: block !important;
+    height: auto !important;
+  }
+  [data-slot='accordion-content'][hidden] {
+    display: block !important;
+  }
+  [data-slot='accordion-trigger-icon'] {
+    display: none !important;
+  }
+}
+
+.print-block {
+  display: none;
+}
+@media print {
+  .print-block {
+    display: block !important;
+  }
+}

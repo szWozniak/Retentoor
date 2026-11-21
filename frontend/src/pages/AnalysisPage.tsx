@@ -5,7 +5,8 @@ import { Check, CloudSun, FileText, Layers, Loader2, MapPin, MousePointerClick, 
 import { api, type Analysis, type Crop, type Parcel } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DatePicker } from '@/components/DatePicker'
 import { ParcelMap } from '@/components/map/ParcelMap'
 import { LandUseNotice } from '@/components/map/LandUseNotice'
 import { PlaceSearch } from '@/components/map/PlaceSearch'
@@ -25,9 +26,6 @@ const SAMPLES = [
   { id: '302111_5.0016.1/10', label: 'Murowana Goślina', hint: 'wielkopolskie · gleby mieszane' },
   { id: '100206_2.0008.273/23', label: 'Kutno', hint: 'łódzkie' },
 ]
-
-const fieldCls =
-  'border-input dark:bg-input/30 h-10 w-full rounded-md border bg-transparent px-3 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -248,21 +246,33 @@ export default function AnalysisPage() {
                 runAnalysis()
               }}
             >
-              <label className="grid gap-1.5 text-sm">
-                <span className="font-medium">Uprawa</span>
-                <select className={cn(fieldCls, 'app-select')} value={crop} onChange={(e) => setCrop(e.target.value)}>
-                  <option value="">Wybierz uprawę…</option>
-                  {crops.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="grid gap-1.5 text-sm">
-                <span className="font-medium">Stan na dzień</span>
-                <Input className="h-10" type="date" value={date} min={minDateIso()} max={todayIso()} onChange={(e) => setDate(e.target.value)} />
-              </label>
+              <div className="grid gap-1.5 text-sm">
+                <span className="font-medium" id="crop-label">
+                  Uprawa
+                </span>
+                <Select
+                  value={crop || null}
+                  onValueChange={(v) => setCrop((v as string) ?? '')}
+                  items={crops.map((c) => ({ value: c.id, label: c.name }))}
+                >
+                  <SelectTrigger className="h-10 w-full" aria-labelledby="crop-label">
+                    <SelectValue placeholder="Wybierz uprawę…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {crops.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-1.5 text-sm">
+                <label className="font-medium" htmlFor="analysis-date">
+                  Stan na dzień
+                </label>
+                <DatePicker id="analysis-date" value={date} min={minDateIso()} max={todayIso()} onChange={setDate} />
+              </div>
               <Button type="submit" size="lg" className="h-11 text-base" disabled={!parcel || !crop || analysing}>
                 {analysing ? (
                   <>

@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, CircleHelp } from 'lucide-react'
 import type { LandUse } from '@/api'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { cn } from '@/lib/utils'
-import { LANDUSE_COLORS } from './ParcelMap'
 
 /** Shows whether the selected parcel is agricultural. Never blocks the analysis – only warns. */
 export function LandUseNotice({ landuse }: { landuse: LandUse }) {
@@ -12,30 +12,32 @@ export function LandUseNotice({ landuse }: { landuse: LandUse }) {
     nierolna: 'Według mapy IUNG to nie jest grunt rolny. Możesz uruchomić analizę, ale wynik dla upraw będzie tylko orientacyjny.',
     nieznana: 'Nie udało się sprawdzić użytkowania terenu.',
   }[landuse.class]
+  const parts =
+    landuse.parts.length > 1
+      ? landuse.parts.map((p) => `${p.label.split('(')[0].split('–')[0].trim()} ${Math.round(p.share * 100)}%`).join(' · ')
+      : null
 
   return (
-    <div
+    <Alert
       className={cn(
-        'flex gap-2 rounded-lg border p-2.5 text-sm',
-        landuse.class === 'nierolna' && 'border-red-300 bg-red-50 text-red-900 dark:bg-red-950/40 dark:text-red-100',
-        landuse.class === 'mieszana' && 'border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100',
+        landuse.class === 'rolna' && '*:[svg]:text-emerald-600 dark:*:[svg]:text-emerald-400',
+        landuse.class === 'mieszana' && 'border-amber-300/70 bg-amber-50/60 *:[svg]:text-amber-600 dark:border-amber-900 dark:bg-amber-950/30',
+        landuse.class === 'nierolna' && 'border-red-300/70 bg-red-50/60 *:[svg]:text-red-600 dark:border-red-900 dark:bg-red-950/30',
       )}
     >
-      <Icon className="mt-0.5 size-4 shrink-0" style={{ color: LANDUSE_COLORS[landuse.class] }} aria-hidden />
-      <div className="grid gap-1">
-        <p className="font-medium">
-          {landuse.label}
-          {landuse.agricultural_share !== null && landuse.class !== 'rolna' && (
-            <span className="font-normal"> · {Math.round(landuse.agricultural_share * 100)}% rolna</span>
-          )}
-        </p>
-        {text && <p className="text-xs opacity-90">{text}</p>}
-        {landuse.parts.length > 1 && (
-          <p className="text-xs opacity-75">
-            {landuse.parts.map((p) => `${p.label.split('(')[0].split('–')[0].trim()} ${Math.round(p.share * 100)}%`).join(' · ')}
-          </p>
+      <Icon aria-hidden />
+      <AlertTitle>
+        {landuse.label}
+        {landuse.agricultural_share !== null && landuse.class !== 'rolna' && (
+          <span className="text-muted-foreground font-normal"> · {Math.round(landuse.agricultural_share * 100)}% rolna</span>
         )}
-      </div>
-    </div>
+      </AlertTitle>
+      {(text || parts) && (
+        <AlertDescription>
+          {text && <p>{text}</p>}
+          {parts && <p className="text-xs">{parts}</p>}
+        </AlertDescription>
+      )}
+    </Alert>
   )
 }

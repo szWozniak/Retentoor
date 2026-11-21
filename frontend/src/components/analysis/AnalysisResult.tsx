@@ -2,6 +2,7 @@ import { AlertTriangle, ArrowDown, CalendarRange, CheckCircle2, Droplets, Info }
 import { CartesianGrid, ComposedChart, Line, ReferenceLine, Scatter, XAxis, YAxis } from 'recharts'
 import type { Analysis } from '@/api'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { KpiCard } from '@/components/charts'
@@ -164,9 +165,9 @@ function HistoryGrid({ a }: { a: Analysis }) {
             <tr key={y.year}>
               <td className="pr-2 font-medium tabular-nums">{y.year}</td>
               {y.periods.map((p) => (
-                <td
-                  key={p.period}
-                  title={`${y.year}, ${p.period}: KBW ${mm(p.kbw)}${typeof p.threshold === 'number' ? `, próg ${thr(p.threshold)}` : ''}`}
+                <Tooltip key={p.period}>
+                <TooltipTrigger
+                  render={<td />}
                   className={cn(
                     'h-6 min-w-6 rounded-sm text-center',
                     p.drought === true && 'bg-status-critical font-bold text-white',
@@ -175,7 +176,18 @@ function HistoryGrid({ a }: { a: Analysis }) {
                   )}
                 >
                   {p.drought === true ? '!' : ''}
-                </td>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <span>
+                    <strong>
+                      {y.year}, {p.period}
+                    </strong>
+                    <br />
+                    bilans wodny {mm(p.kbw)}
+                    {typeof p.threshold === 'number' ? ` · próg suszy ${thr(p.threshold)}` : ' · brak progu w tym okresie'}
+                  </span>
+                </TooltipContent>
+                </Tooltip>
               ))}
             </tr>
           ))}

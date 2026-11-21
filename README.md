@@ -3,7 +3,7 @@
 Generic starter: **FastAPI + SQLite** backend and **React + Vite + Tailwind** frontend. No external paid services.
 
 ```
-backend/   FastAPI app (app/main.py), SQLModel models, routers, pytest
+backend/   FastAPI app (app/main.py), routers, services, pytest (no database)
 frontend/  React + TS, src/api.ts = typed API client, dev server proxies /api → :8000
 ```
 

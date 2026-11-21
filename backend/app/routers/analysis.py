@@ -1,11 +1,12 @@
 """Water-situation assessment for a parcel, crop and analysis date (step 1 of the KOWR sequence)."""
 
 import asyncio
+import re
 import time
 from dataclasses import asdict
 from datetime import date, timedelta
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 
 from ..services import advisor, ditches, forecast, iung, kbw, meteo, sentinel, soilgrids, surroundings, terrain, uldk
 
@@ -50,6 +51,31 @@ async def satellite(
         ],
         "elapsed_s": round(time.perf_counter() - t0, 2),
     }
+
+
+SCENE_RE = re.compile(r"^S2[A-D]_\d{2}[A-Z]{3}_\d{8}_\d+_L2A$")
+
+
+@router.get("/satellite/image")
+async def satellite_image(
+    scene: str = Query(..., max_length=40),
+    parcel_id: str = Query(..., min_length=3, max_length=100),
+    kind: str = Query("rgb", pattern="^(rgb|ndmi)$"),
+):
+    """PNG of the Sentinel-2 scene around the parcel (true colour or NDMI), with the parcel outline."""
+    if not SCENE_RE.match(scene):
+        raise HTTPException(422, "Nieprawidłowy identyfikator sceny.")
+    try:
+        parcel = await uldk.by_id(parcel_id)
+    except uldk.ParcelNotFound:
+        raise HTTPException(404, "Nie znaleziono działki.")
+    except uldk.UldkError as e:
+        raise HTTPException(503, str(e))
+    try:
+        png = await asyncio.wait_for(sentinel.image(scene, parcel.geometry, kind), 40)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(503, "Nie udało się pobrać zdjęcia satelitarnego. Spróbuj ponownie później.") from e
+    return Response(png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @router.get("")

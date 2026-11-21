@@ -4,6 +4,7 @@ import { api, type Analysis, type Satellite } from '@/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { SatelliteImageDialog } from './SatelliteImageDialog'
 import { formatDate, formatDateShort } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -87,6 +88,11 @@ export function SatelliteCard({ a }: { a: Analysis }) {
         {data && !loading && (
           <>
             <p>{data.assessment}</p>
+            {cur && (
+              <div className="no-print">
+                <SatelliteImageDialog scene={cur} parcelId={a.parcel.id} />
+              </div>
+            )}
             <div className="grid gap-x-8 md:grid-cols-2">
               <div>
                 <Row

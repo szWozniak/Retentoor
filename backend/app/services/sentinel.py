@@ -15,7 +15,9 @@ Per-scene statistics for a parcel never change, so they are cached permanently.
 """
 
 import asyncio
+import base64
 import hashlib
+import io
 import json
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -24,6 +26,7 @@ from datetime import date, datetime, timedelta, timezone
 import httpx
 import numpy as np
 import rasterio
+from PIL import Image, ImageDraw
 from pyproj import Transformer
 from rasterio.enums import Resampling
 from rasterio.features import geometry_mask
@@ -251,3 +254,94 @@ def _pl_num(x: float) -> str:
 
 def _pl_date(iso: str) -> str:
     return date.fromisoformat(iso).strftime("%d.%m.%Y")
+
+
+# ---------------------------------------------------------------- source image for the user ("Pokaż zdjęcie")
+
+ITEM_URL = "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/{}"
+# NDMI colour ramp: dry (brown) -> wet (teal/blue); clouds/shadows grey
+NDMI_RAMP = [(-0.4, (140, 81, 10)), (-0.1, (216, 179, 101)), (0.1, (246, 232, 195)), (0.25, (199, 234, 229)),
+             (0.4, (90, 180, 172)), (0.6, (1, 102, 94))]
+IMAGE_PX = 640  # longer side of the output PNG
+
+
+async def _item(scene: str) -> dict:
+    async def fetch() -> str:
+        async with httpx.AsyncClient(timeout=20) as c:
+            r = await c.get(ITEM_URL.format(scene))
+            r.raise_for_status()
+            return r.text
+
+    text, _, _ = await cache.cached("s2_item", scene, fetch)
+    return json.loads(text)
+
+
+def _ramp(v: np.ndarray) -> np.ndarray:
+    xs = [p for p, _ in NDMI_RAMP]
+    out = np.zeros(v.shape + (3,), dtype="uint8")
+    for ch in range(3):
+        out[..., ch] = np.interp(v, xs, [c[ch] for _, c in NDMI_RAMP]).astype("uint8")
+    return out
+
+
+def _render(item: dict, geom_geojson: dict, kind: str) -> bytes:
+    geom = shape(geom_geojson)
+    with rasterio.Env(**GDAL_ENV):
+        href = item["assets"]["visual" if kind == "rgb" else "scl"]["href"]
+        with rasterio.open(href) as src:
+            crs = src.crs
+            tr = Transformer.from_crs(4326, crs, always_xy=True)
+            g = transform(tr.transform, geom)
+            minx, miny, maxx, maxy = g.bounds
+            pad = max(maxx - minx, maxy - miny) * 0.6 + 60  # context around the parcel
+            bounds = (minx - pad, miny - pad, maxx + pad, maxy + pad)
+            win = from_bounds(*bounds, transform=src.transform).round_offsets().round_lengths()
+            if kind == "rgb":
+                arr = src.read(window=win, boundless=True, fill_value=0)  # 3 × h × w, uint8 (already stretched)
+                rgb = np.moveaxis(arr, 0, -1).astype("float32")
+                rgb = (255 * (rgb / 255) ** 0.8).clip(0, 255).astype("uint8")  # slight gamma lift for dark fields
+            else:
+                scl = src.read(1, window=win, boundless=True, fill_value=0)
+            wt = src.window_transform(win)
+        if kind != "rgb":
+            hw = scl.shape
+            nir, nir0, _ = _read_window(item["assets"]["nir08"]["href"], bounds, hw)
+            swir, swir0, _ = _read_window(item["assets"]["swir16"]["href"], bounds, hw)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                ndmi = (nir - swir) / (nir + swir)
+            rgb = _ramp(np.nan_to_num(ndmi, nan=-0.4))
+            cloudy = ~np.isin(scl, [4, 5, 6]) | nir0 | swir0
+            rgb[cloudy] = (190, 190, 190)
+    img = Image.fromarray(rgb, "RGB")
+    scale = IMAGE_PX / max(img.size)
+    img = img.resize((max(1, round(img.width * scale)), max(1, round(img.height * scale))), Image.NEAREST if kind != "rgb" else Image.BICUBIC)
+    # parcel outline: map CRS coords -> pixel coords of the resized image
+    inv = ~wt
+    draw = ImageDraw.Draw(img)
+    polys = [g] if g.geom_type == "Polygon" else list(g.geoms)
+    for poly in polys:
+        pts = [tuple(v * scale for v in inv * (x, y)) for x, y in poly.exterior.coords]
+        draw.line(pts + [pts[0]], fill=(255, 255, 255), width=8, joint="curve")
+        draw.line(pts + [pts[0]], fill=(21, 128, 61), width=4, joint="curve")
+    buf = io.BytesIO()
+    img.save(buf, "PNG", optimize=True)
+    return buf.getvalue()
+
+
+def _read_window(href: str, bounds: tuple, hw: tuple[int, int]):
+    """Band on the same window (map bounds) and grid as the SCL read; reflectance without offset (only ratios are used)."""
+    with rasterio.open(href) as src:
+        win = from_bounds(*bounds, transform=src.transform).round_offsets().round_lengths()
+        arr = src.read(1, window=win, out_shape=hw, boundless=True, fill_value=0, resampling=Resampling.average)
+    return arr.astype("float32"), arr == 0, None
+
+
+async def image(scene: str, geom_geojson: dict, kind: str) -> bytes:
+    key = f"v2:{scene}:{kind}:{hashlib.sha1(shape(geom_geojson).wkb).hexdigest()}"
+    hit = cache.get("s2_png", key)
+    if hit:
+        return base64.b64decode(hit.payload)
+    item = await _item(scene)
+    png = await asyncio.get_running_loop().run_in_executor(_pool, _render, item, geom_geojson, kind)
+    cache.put("s2_png", key, base64.b64encode(png).decode())
+    return png

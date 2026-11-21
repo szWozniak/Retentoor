@@ -119,9 +119,16 @@ function StatusBanner({ a }: { a: Analysis }) {
 }
 
 function KbwChart({ a }: { a: Analysis }) {
-  const data = a.series.map((s) => ({ ...s }))
+  // observed part solid, forecast part dashed; the last observed day is in both series so the line stays continuous
+  const firstFc = a.series.findIndex((s) => s.forecast)
+  const data = a.series.map((s, i) => ({
+    ...s,
+    kbw: s.forecast ? null : s.kbw,
+    kbw_fc: firstFc >= 0 && (s.forecast || i === firstFc - 1) ? s.kbw : null,
+  }))
   const config = {
     kbw: { label: `KBW 60 dni (${new Date(a.analysis_date).getFullYear()})`, color: 'var(--primary)' },
+    ...(firstFc >= 0 ? { kbw_fc: { label: 'KBW wg prognozy pogody', color: 'var(--primary)' } } : {}),
     median: { label: 'Mediana z 10 lat', color: 'var(--muted-foreground)' },
     threshold: { label: 'Próg suszy IUNG (koniec okresu)', color: 'var(--status-critical)' },
   }
@@ -136,6 +143,9 @@ function KbwChart({ a }: { a: Analysis }) {
         <ChartLegend itemSorter={null} content={<ChartLegendContent />} />
         <Line dataKey="median" stroke="var(--color-median)" strokeWidth={2} strokeDasharray="4 4" dot={false} connectNulls isAnimationActive={false} />
         <Line dataKey="kbw" stroke="var(--color-kbw)" strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
+        {firstFc >= 0 && (
+          <Line dataKey="kbw_fc" stroke="var(--color-kbw_fc)" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
+        )}
         <Scatter dataKey="threshold" fill="var(--color-threshold)" shape="diamond" isAnimationActive={false} />
       </ComposedChart>
     </ChartContainer>

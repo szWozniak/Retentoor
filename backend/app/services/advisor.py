@@ -177,6 +177,25 @@ def crop_comparison(df: pd.DataFrame, category: str | None, analysis_date: date)
 
 # ---------------------------------------------------------------- main rule engine
 
+_DO = "Nawadniaj wieczorem lub rano, dawkami 20–30 mm, i dopiero po wykorzystaniu działań retencyjnych. Sprawdzaj wilgotność gleby na głębokości korzeni (np. próba palcowa, tensjometr)."
+IRRIGATION_TITLE = {
+    "biezaca": {"zasadne": "Nawadnianie zasadne: ok. {dose} mm w najbliższych dniach", "niezasadne": "Nawadnianie teraz niepotrzebne",
+                "wstrzymaj się": "Wstrzymaj się z nawadnianiem – w prognozie opady"},
+    "prognoza": {"zasadne": "Około {day} nawadnianie prawdopodobnie będzie zasadne: ok. {dose} mm",
+                 "niezasadne": "Około {day} nawadnianie prawdopodobnie nie będzie potrzebne",
+                 "wstrzymaj się": "Około {day} lepiej wstrzymać się z nawadnianiem – w prognozie opady"},
+    "wsteczna": {"zasadne": "{day}: nawadnianie było zasadne (ok. {dose} mm)", "niezasadne": "{day}: nawadnianie nie było potrzebne",
+                 "wstrzymaj się": "{day}: nawadnianie nie było potrzebne"},
+}
+IRRIGATION_ACTION = {
+    "biezaca": {"zasadne": _DO, "inne": "Obserwuj uprawę i prognozę. Zapas wody w glebie wystarcza lub nadchodzą opady."},
+    "prognoza": {"zasadne": _DO + " Sprawdź analizę ponownie bliżej tego dnia – prognoza może się zmienić.",
+                 "inne": "Zapas wody w glebie według prognozy wystarczy. Sprawdź analizę ponownie bliżej tego dnia."},
+    "wsteczna": {"zasadne": "Tak wyglądała sytuacja w tamtym dniu. Jeśli podobne niedobory się powtarzają, zaplanuj wcześniej źródło wody i działania retencyjne z sekcji wyżej.",
+                 "inne": "Tak wyglądała sytuacja w tamtym dniu: zapas wody w glebie wystarczał."},
+}
+
+
 def advise(
     *,
     crop: str,
@@ -195,6 +214,7 @@ def advise(
     balance: dict | None,
     comparison: list[dict],
     forecast: dict | None,
+    mode: str = "biezaca",  # "wsteczna" | "biezaca" | "prognoza" (see routers/analysis.py)
 ) -> dict:
     causes: list[Cause] = []
     recs: list[Recommendation] = []
@@ -409,12 +429,16 @@ def advise(
             decision = "zasadne"
         else:
             decision = "niezasadne"
-        why = [
+        if mode == "prognoza":
+            why_prefix = [f"Stan przewidywany na {analysis_date.strftime('%d.%m.%Y')} na podstawie prognozy pogody – może się zmienić."]
+        else:
+            why_prefix = []
+        why = why_prefix + [
             f"Szacowany niedobór wody w strefie korzeni: {balance['depletion_mm']} mm, przy łatwo dostępnej wodzie {balance['raw_mm']} mm (z {balance['taw_mm']} mm dostępnej).",
             f"Ostatnie 7 dni: opad {balance['p_last7_mm']} mm, potrzeby wodne uprawy (ET₀·Kc) {balance['etc_last7_mm']} mm.",
         ]
         if rain_soon is not None:
-            why.append(f"Prognoza opadu na 7 dni (Open-Meteo): {pl(rain_soon, 0)} mm.")
+            why.append(f"Prognoza opadu na {forecast.get('days', 7)} dni po dniu analizy (Open-Meteo): {pl(rain_soon, 0)} mm.")
         if balance["stress_days_season"]:
             why.append(f"Dni ze stresem wodnym w tym sezonie: {balance['stress_days_season']}.")
         if low_demand:
@@ -422,10 +446,8 @@ def advise(
         irrigation = {"decision": decision, "dose_mm": dose, **balance, "p_next7_mm": rain_soon}
         recs.append(Recommendation(
             "irrigation", "nawadnianie",
-            {"zasadne": f"Nawadnianie zasadne: ok. {dose} mm w najbliższych dniach", "niezasadne": "Nawadnianie teraz niepotrzebne",
-             "wstrzymaj się": "Wstrzymaj się z nawadnianiem – w prognozie opady"}[decision],
-            "Nawadniaj wieczorem lub rano, dawkami 20–30 mm, i dopiero po wykorzystaniu działań retencyjnych. Sprawdzaj wilgotność gleby na głębokości korzeni (np. próba palcowa, tensjometr)."
-            if decision == "zasadne" else "Obserwuj uprawę i prognozę. Zapas wody w glebie wystarcza lub nadchodzą opady.",
+            IRRIGATION_TITLE[mode][decision].format(dose=dose, day=analysis_date.strftime("%d.%m.%Y")),
+            IRRIGATION_ACTION[mode]["zasadne" if decision == "zasadne" else "inne"],
             why, "wysoki" if decision == "zasadne" else "niski", ["FAO-56 (bilans wodny strefy korzeniowej)"] + (["prognoza Open-Meteo"] if rain_soon is not None else []),
             permit="Pobór wody do nawadniania powyżej limitu zwykłego korzystania z wód może wymagać pozwolenia wodnoprawnego – sprawdź w Wodach Polskich." if decision == "zasadne" else None,
         ))

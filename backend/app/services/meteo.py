@@ -1,7 +1,8 @@
 """Open-Meteo daily weather (CC-BY 4.0).
 
 - Historical: Archive API (ERA5 / ERA5-Land reanalysis), ~5 days behind real time.
-- Last days before the analysis date: Forecast API with past_days (fills the archive lag).
+- Last days before the analysis date and future analysis dates (up to 16 days): forecast provider
+  (services/forecast.py – Open-Meteo Forecast API with past_days fills the archive lag).
 ET0 = FAO-56 Penman-Monteith reference evapotranspiration (Open-Meteo's et0_fao_evapotranspiration)."""
 
 import asyncio
@@ -12,7 +13,7 @@ from datetime import date, datetime, timedelta
 import pandas as pd
 
 from ..config import settings
-from . import cache, nasa_power
+from . import cache, forecast, nasa_power
 from .http import client
 
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
@@ -28,6 +29,8 @@ class MeteoResult:
     lon: float
     sources: list[dict]
     limitations: list[str]
+    forecast: "forecast.ForecastResult | None" = None  # weather forecast used (recent days and/or future days)
+    forecast_from: date | None = None  # first day in df that is a forecast, not an observation (future dates only)
 
 
 def _cell(x: float) -> float:
@@ -109,41 +112,44 @@ async def daily_history(lat: float, lon: float, analysis_date: date, years: int 
     archive_end = df.index.max().date() if len(df) else start
     sources = [{**provider, "fetched_at": fetched_at, "range": f"{start} – {archive_end}"}]
 
+    fr = None
+    forecast_from = None
     if analysis_date > archive_end:
-        f_params = {"latitude": clat, "longitude": clon, "past_days": 14, "forecast_days": 1, "daily": DAILY, "timezone": "Europe/Warsaw"}
-        try:
-            text, f_at, _ = await cache.cached(
-                "openmeteo_recent", f"{clat},{clon}:{today}", lambda: _get(FORECAST_URL, f_params), max_age=timedelta(hours=6)
-            )
-            recent = _to_df(text)
-            recent = recent[(recent.index > pd.Timestamp(archive_end)) & (recent.index <= pd.Timestamp(analysis_date))]
+        fr = await forecast.get(lat, lon)
+        if fr is not None:
+            recent = fr.df[(fr.df.index > pd.Timestamp(archive_end)) & (fr.df.index <= pd.Timestamp(analysis_date))]
             if len(recent):
                 df = pd.concat([df, recent])
-                sources.append({"name": "Open-Meteo Forecast API (ostatnie dni)", "url": FORECAST_URL, "fetched_at": f_at,
-                                "range": f"{recent.index.min().date()} – {recent.index.max().date()}", "license": "CC BY 4.0"})
-        except Exception:
-            pass
+                # today's daily total is partly observed, so "forecast" starts tomorrow
+                past = recent[recent.index <= pd.Timestamp(fr.issued)]
+                future = recent[recent.index > pd.Timestamp(fr.issued)]
+                if len(past):
+                    sources.append({"name": "Open-Meteo Forecast API (ostatnie dni)", "url": FORECAST_URL, "fetched_at": fr.source["fetched_at"],
+                                    "range": f"{past.index.min().date()} – {past.index.max().date()}", "license": "CC BY 4.0"})
+                if len(future):
+                    forecast_from = future.index.min().date()
+                    sources.append({**fr.source, "range": f"{forecast_from} – {future.index.max().date()}"})
         last = df.index.max().date() if len(df) else start
         if last < analysis_date:
             limitations.append(f"Dane pogodowe dostępne do {last.isoformat()} – ostatnie {(analysis_date - last).days} dni przed datą analizy nie są uwzględnione.")
 
     df = df[~df.index.duplicated(keep="last")].sort_index()
-    return MeteoResult(df=df, lat=clat, lon=clon, sources=sources, limitations=limitations)
+    return MeteoResult(df=df, lat=clat, lon=clon, sources=sources, limitations=limitations, forecast=fr, forecast_from=forecast_from)
 
 
-async def forecast_7d(lat: float, lon: float) -> dict:
-    """Precipitation and ET0 forecast for the next 7 days (only meaningful when analysing 'today')."""
-    clat, clon = _cell(lat), _cell(lon)
-    params = {"latitude": clat, "longitude": clon, "forecast_days": 7, "daily": "precipitation_sum,et0_fao_evapotranspiration",
-              "timezone": "Europe/Warsaw"}
-    text, fetched_at, _ = await cache.cached(
-        "openmeteo_forecast", f"{clat},{clon}:{date.today()}", lambda: _get(FORECAST_URL, params), max_age=timedelta(hours=3)
-    )
-    d = json.loads(text)["daily"]
+def rain_ahead(fr: "forecast.ForecastResult | None", after: date, days: int = 7) -> dict | None:
+    """Forecast P / ET0 for the `days` days after `after` (irrigation advice). None if the forecast does not cover them."""
+    if fr is None:
+        return None
+    w = fr.window(after + timedelta(days=1), days)
+    w = w[w.index >= pd.Timestamp(fr.issued)]  # only real forecast days
+    if len(w) < min(days, 3):
+        return None
     return {
-        "p_next7_mm": round(sum(v or 0 for v in d["precipitation_sum"]), 1),
-        "et0_next7_mm": round(sum(v or 0 for v in d["et0_fao_evapotranspiration"]), 1),
-        "fetched_at": fetched_at,
+        "p_next7_mm": round(float(w["P"].fillna(0).sum()), 1),
+        "et0_next7_mm": round(float(w["ET0"].fillna(0).sum()), 1),
+        "days": len(w),
+        "fetched_at": fr.source["fetched_at"],
     }
 
 

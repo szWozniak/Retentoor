@@ -98,7 +98,11 @@ export type Analysis = {
     years_total: number
     period_frequency: { period: string; share: number; n: number }[]
   }
-  series: { date: string; kbw: number | null; median: number | null; threshold: number | null }[]
+  /** wsteczna = past date, biezaca = today (±2 days), prognoza = future date (weather forecast up to 16 days) */
+  mode: 'wsteczna' | 'biezaca' | 'prognoza'
+  /** days whose weather is a forecast, not an observation (future dates only) */
+  forecast_span: { from: string; to: string; method: string; label: string } | null
+  series: { date: string; kbw: number | null; median: number | null; threshold: number | null; forecast: boolean }[]
   soilgrids: { clay_pct: number; sand_pct: number; silt_pct: number; soc_pct: number; om_pct: number; awc_mm_100: number; awc_mm_30: number; texture: string } | null
   terrain: { min_m: number; max_m: number; relief_m: number; slope_pct: number; max_local_slope_pct: number; downslope_dir: string | null; lowest_point: [number, number]; highest_point: [number, number] } | null
   surroundings: { water_share: number; forest_share: number; organic_share: number; built_share: number; nearest_water_m: number | null } | null

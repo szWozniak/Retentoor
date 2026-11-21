@@ -163,7 +163,9 @@ def rolling_window(df: pd.DataFrame, end: date, days: int = 61) -> dict:
     }
 
 
-def daily_rolling_series(df: pd.DataFrame, analysis_date: date, crop: str, category: str | None, days: int = 61) -> list[dict]:
+def daily_rolling_series(
+    df: pd.DataFrame, analysis_date: date, crop: str, category: str | None, days: int = 61, forecast_from: date | None = None
+) -> list[dict]:
     """Daily 60-day KBW for the analysis year (Jan 1 → analysis date), with the 10-year median for the same day
     and the IUNG threshold of the period ending on that day (for the chart)."""
     pe = df["P"] - df["ET0"]
@@ -185,5 +187,6 @@ def daily_rolling_series(df: pd.DataFrame, analysis_date: date, crop: str, categ
             "kbw": None if pd.isna(v) else round(float(v), 1),
             "median": None if pd.isna(med.get(ts.dayofyear)) else round(float(med.get(ts.dayofyear)), 1),
             "threshold": end_thr.get((ts.month, ts.day)),
+            "forecast": bool(forecast_from and ts.date() >= forecast_from),
         })
     return out

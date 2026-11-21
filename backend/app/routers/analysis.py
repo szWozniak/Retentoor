@@ -7,7 +7,7 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, HTTPException, Query
 
-from ..services import advisor, ditches, iung, kbw, meteo, soilgrids, surroundings, terrain, uldk
+from ..services import advisor, ditches, forecast, iung, kbw, meteo, soilgrids, surroundings, terrain, uldk
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -26,8 +26,8 @@ async def analyse(
     t0 = time.perf_counter()
     today = date.today()
     d = analysis_date or today
-    if d > today:
-        raise HTTPException(422, "Data analizy nie może być z przyszłości.")
+    if d > today + timedelta(days=forecast.HORIZON_DAYS):
+        raise HTTPException(422, f"Data analizy może być najwyżej {forecast.HORIZON_DAYS} dni naprzód – tyle obejmuje prognoza pogody.")
     if d < date(today.year - 10, 1, 1):
         raise HTTPException(422, "Data analizy musi mieścić się w ostatnich 10 latach.")
     if crop not in kbw.table()["crops"]:
@@ -49,14 +49,14 @@ async def analyse(
         except Exception as e:  # noqa: BLE001
             return e
 
-    is_today = (today - d).days <= 2
-    soil, met, sg, ter, sur, fc, dit = await asyncio.gather(
+    # "wsteczna": past date (assessment as it was then); "biezaca": today ±2 days; "prognoza": future date (forecast weather)
+    mode = "prognoza" if d > today else ("biezaca" if (today - d).days <= 2 else "wsteczna")
+    soil, met, sg, ter, sur, dit = await asyncio.gather(
         opt(iung.soil_for_parcel(parcel.geometry), 15),
         opt(meteo.daily_history(lat, lon, d), 45),
         opt(soilgrids.query(lat, lon), 16),
         opt(terrain.analyse(parcel.geometry), 15),
         opt(surroundings.analyse(parcel.geometry, lat, lon), 15),
-        opt(meteo.forecast_7d(lat, lon), 10) if is_today else asyncio.sleep(0, result=None),
         opt(ditches.analyse(parcel.geometry, lat, lon), 15),
     )
 
@@ -72,6 +72,9 @@ async def analyse(
     if isinstance(met, BaseException):
         raise HTTPException(503, f"Brak danych meteorologicznych (Open-Meteo i NASA POWER niedostępne): {met}")
     limitations = met.limitations + limitations
+    if mode == "prognoza" and met.forecast_from is None:
+        raise HTTPException(503, "Prognoza pogody jest chwilowo niedostępna, więc nie da się ocenić przyszłej daty. Wybierz dzisiejszą lub wcześniejszą datę.")
+    fc = meteo.rain_ahead(met.forecast, d) if mode != "wsteczna" else None
     if isinstance(sg, BaseException) or sg is None:
         missing.append("Skład gleby i węgiel organiczny (SoilGrids) – usługa nie odpowiedziała" if isinstance(sg, BaseException) else "Skład gleby (SoilGrids) – brak danych dla tego miejsca")
         sg = None
@@ -81,8 +84,6 @@ async def analyse(
     if isinstance(sur, BaseException) or sur is None:
         missing.append("Otoczenie działki: wody, lasy, mokradła (IUNG) – brak danych")
         sur = None
-    if isinstance(fc, BaseException):
-        fc = None
     if isinstance(dit, BaseException):
         missing.append("Rowy melioracyjne i cieki (BDOT10k GUGiK) – brak danych")
         dit = None
@@ -134,6 +135,8 @@ async def analyse(
         conf_score -= 1
     if any("NASA POWER" in src["name"] for src in met.sources):
         conf_score -= 1  # coarser fallback weather data
+    if mode == "prognoza" and (d - today).days > 7:
+        conf_score -= 1  # second week of a weather forecast is much less reliable
     confidence = {3: "wysoki", 2: "średni"}.get(conf_score, "niski")
 
     sg_d = asdict(sg) if sg else None
@@ -148,10 +151,12 @@ async def analyse(
         crop=crop, crop_name=crop_name, analysis_date=d, category=category, soil_code=soil.code,
         current_last_period=asdict(last_assessed) if last_assessed else None, window=window, history=hist_summary,
         meteo_stats=advisor.meteo_window_stats(df, d), soilgrids=sg_d, terrain=ter_d, surroundings=sur_d, ditches=dit_d,
-        balance=balance, comparison=comparison, forecast=fc,
+        balance=balance, comparison=comparison, forecast=fc, mode=mode,
     )
-    if not is_today:
-        limitations.append("Analiza historyczna: zalecenie dotyczące nawadniania odnosi się do stanu na dzień analizy (bez prognozy pogody).")
+    if mode == "wsteczna":
+        limitations.append("Analiza wsteczna: ocena i zalecenie dotyczące nawadniania opisują stan na dzień analizy (bez ówczesnej prognozy pogody). Działania retencyjne są aktualne także dziś.")
+    if met.forecast_from:
+        limitations.insert(0, f"Pogoda od {met.forecast_from.strftime('%d.%m.%Y')} do {d.strftime('%d.%m.%Y')} to {forecast.describe(met.forecast.method)}, a nie pomiar – im dalej od dziś, tym mniej pewna.")
     limitations.append("Współczynniki uprawowe Kc i głębokość korzeni to przybliżenia wg FAO-56 dla typowego kalendarza upraw w Polsce.")
     if sg:
         limitations.append("Dane glebowe SoilGrids mają rozdzielczość 250 m i są modelowane – mogą odbiegać od stanu na działce.")
@@ -165,7 +170,6 @@ async def analyse(
         *([{"name": "GUGiK NMT – numeryczny model terenu", "url": terrain.URL, "fetched_at": ter.fetched_at, "license": "dane PZGiK udostępniane bez opłat"}] if ter else []),
         *([{"name": "IUNG-PIB – otoczenie działki (wody, lasy, gleby organiczne)", "url": iung.WMS_URL, "fetched_at": sur.fetched_at, "license": "dane publiczne IUNG-PIB"}] if sur else []),
         *([{"name": "GUGiK BDOT10k – rowy melioracyjne i cieki", "url": ditches.URL, "fetched_at": dit.fetched_at, "license": "dane PZGiK udostępniane bez opłat"}] if dit else []),
-        *([{"name": "Open-Meteo Forecast – prognoza 7 dni", "url": meteo.FORECAST_URL, "fetched_at": fc["fetched_at"], "license": "CC BY 4.0"}] if fc else []),
     ]
 
     return {
@@ -185,7 +189,10 @@ async def analyse(
             "years_total": len(history),
             "period_frequency": freq,
         },
-        "series": kbw.daily_rolling_series(df, d, crop, category),
+        "mode": mode,
+        "forecast_span": {"from": met.forecast_from.isoformat(), "to": d.isoformat(), "method": met.forecast.method,
+                          "label": forecast.describe(met.forecast.method)} if met.forecast_from else None,
+        "series": kbw.daily_rolling_series(df, d, crop, category, forecast_from=met.forecast_from),
         "soilgrids": sg_d,
         "terrain": ter_d,
         "surroundings": sur_d,

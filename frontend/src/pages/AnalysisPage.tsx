@@ -7,20 +7,23 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DatePicker } from '@/components/DatePicker'
+import { DatePicker, toIso } from '@/components/DatePicker'
 import { ParcelMap } from '@/components/map/ParcelMap'
 import { LandUseNotice } from '@/components/map/LandUseNotice'
 import { PlaceSearch } from '@/components/map/PlaceSearch'
 import { AnalysisResult } from '@/components/analysis/AnalysisResult'
 import { AnalysisProgress } from '@/components/analysis/AnalysisProgress'
 import { ReportHeader } from '@/components/analysis/ReportHeader'
-import { formatNumber } from '@/lib/format'
+import { formatDate, formatNumber } from '@/lib/format'
 import { useSavedFields } from '@/lib/fields'
 import { containsPoint } from '@/lib/geo'
 import { cn } from '@/lib/utils'
 
-const todayIso = () => new Date().toISOString().slice(0, 10)
+/** How far ahead the analysis date may go: the weather forecast range (backend: services/forecast.HORIZON_DAYS). */
+const FORECAST_DAYS = 16
+const todayIso = () => toIso(new Date()) // local date (toISOString would give yesterday shortly after midnight)
 const minDateIso = () => `${new Date().getFullYear() - 10}-01-01`
+const maxDateIso = () => toIso(new Date(Date.now() + FORECAST_DAYS * 86_400_000))
 
 /** Real parcels from different regions – handy for the demo and for trying the tool. */
 const SAMPLES = [
@@ -77,6 +80,7 @@ export default function AnalysisPage() {
   const [crops, setCrops] = useState<Crop[]>([])
   const [crop, setCrop] = useState(params.get('uprawa') ?? '')
   const [date, setDate] = useState(params.get('data') ?? todayIso())
+  const [pickDate, setPickDate] = useState(() => (params.get('data') ?? todayIso()) !== todayIso())
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [analysing, setAnalysing] = useState(false)
   const [focus, setFocus] = useState<{ lat: number; lon: number; t: number; zoom?: number } | null>(null)
@@ -315,7 +319,7 @@ export default function AnalysisPage() {
             <StepTitle n={2} done={!!analysis}>
               Uprawa i data
             </StepTitle>
-            <CardDescription>Dowolny dzień z ostatnich 10 lat.</CardDescription>
+            <CardDescription>Wybierz uprawę, która najbardziej potrzebuje wody.</CardDescription>
           </CardHeader>
           <CardContent>
             <form
@@ -346,12 +350,24 @@ export default function AnalysisPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid gap-1.5 text-sm">
-                <label className="font-medium" htmlFor="analysis-date">
-                  Stan na dzień
-                </label>
-                <DatePicker id="analysis-date" value={date} min={minDateIso()} max={todayIso()} onChange={setDate} />
-              </div>
+              {pickDate ? (
+                <div className="grid gap-1.5 text-sm">
+                  <label className="font-medium" htmlFor="analysis-date">
+                    Stan na dzień
+                  </label>
+                  <DatePicker id="analysis-date" value={date} today={todayIso()} min={minDateIso()} max={maxDateIso()} onChange={setDate} />
+                  <p className="text-muted-foreground text-xs">
+                    Dzień z ostatnich 10 lat (ocena wsteczna) albo do {FORECAST_DAYS} dni naprzód (według prognozy pogody).
+                  </p>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  Ocena na dziś, {formatDate(date)}.{' '}
+                  <button type="button" className="text-primary font-bold underline underline-offset-3" onClick={() => setPickDate(true)}>
+                    Zmień datę analizy
+                  </button>
+                </p>
+              )}
               <Button type="submit" size="lg" className="h-11 text-base" disabled={!parcel || !crop || analysing}>
                 {analysing ? (
                   <>

@@ -42,7 +42,7 @@ cd backend
 | `GET /api/health` | health check |
 | `GET /api/parcels/by-id?id=`, `GET /api/parcels/at?lat=&lon=` | parcel geometry (ULDK); `landuse=false` skips the slower land-use step |
 | `GET /api/parcels/landuse?id=` | land-use class of a parcel (IUNG) |
-| `GET /api/analysis?parcel_id=&crop=&date=` | full report (assessment, history, causes, recommendations) |
+| `GET /api/analysis?parcel_id=&crop=&date=` | full report (assessment, history, causes, recommendations); `date` from 10 years back up to 16 days ahead (future days use the weather forecast, `mode` = wsteczna / biezaca / prognoza) |
 | `GET /api/analysis/crops` | crop list |
 | `GET /api/geocode?q=` | place / address search (GUGiK UUG, Nominatim fallback) |
 

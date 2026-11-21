@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
+import { Circle, CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
+import { LocateFixed, Loader2 } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { LandUse, Parcel } from '@/api'
@@ -68,6 +69,10 @@ export type MapMarker = { lat: number; lon: number; label: string }
 type Props = {
   parcel: Parcel | null
   markers?: MapMarker[]
+  /** the farmer's GPS position (blue dot + accuracy circle) */
+  userPos?: { lat: number; lon: number; accuracy: number } | null
+  onLocate?: () => void
+  locating?: boolean
   /** when set (new object each time), the map flies to this point */
   focus?: { lat: number; lon: number; t: number; zoom?: number } | null
   onPick: (lat: number, lon: number) => void
@@ -101,7 +106,7 @@ function FitToParcel({ parcel }: { parcel: Parcel | null }) {
   return null
 }
 
-export function ParcelMap({ parcel, markers, focus, onPick, busy, className }: Props) {
+export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating, onPick, busy, className }: Props) {
   const [zoom, setZoom] = useState(6)
   const color = parcel ? LANDUSE_COLORS[parcel.landuse?.class ?? 'nieznana'] : LANDUSE_COLORS.nieznana
 
@@ -137,11 +142,31 @@ export function ParcelMap({ parcel, markers, focus, onPick, busy, className }: P
             <Tooltip direction="top" offset={[0, -8]} permanent>{m.label}</Tooltip>
           </CircleMarker>
         ))}
+        {userPos && (
+          <>
+            <Circle center={[userPos.lat, userPos.lon]} radius={userPos.accuracy} pathOptions={{ color: '#2563eb', weight: 1, fillOpacity: 0.08 }} />
+            <CircleMarker center={[userPos.lat, userPos.lon]} radius={7} pathOptions={{ color: '#fff', weight: 3, fillColor: '#2563eb', fillOpacity: 1 }}>
+              <Tooltip direction="top" offset={[0, -8]}>Jesteś tutaj</Tooltip>
+            </CircleMarker>
+          </>
+        )}
         <FlyTo focus={focus} />
         <ClickHandler onPick={onPick} onZoom={setZoom} />
         <FitToParcel parcel={parcel} />
       </MapContainer>
 
+      {onLocate && (
+        <button
+          type="button"
+          onClick={onLocate}
+          disabled={locating}
+          className="bg-background text-foreground hover:bg-muted absolute top-[86px] left-[11px] z-[1000] grid size-[34px] place-items-center rounded-md border shadow-sm"
+          aria-label="Pokaż moją lokalizację"
+          title="Moja lokalizacja"
+        >
+          {locating ? <Loader2 className="size-4 animate-spin" /> : <LocateFixed className="size-4" />}
+        </button>
+      )}
       {zoom < PARCELS_MIN_ZOOM && (
         <div className="pointer-events-none absolute top-3 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-black/70 px-3 py-1.5 text-center text-xs text-white">
           Przybliż mapę, aby zobaczyć granice działek, albo kliknij w swoje pole

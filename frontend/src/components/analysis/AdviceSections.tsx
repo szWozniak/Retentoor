@@ -29,7 +29,7 @@ export function CausesSection({ a }: { a: Analysis }) {
                 </p>
                 <span className={cn('shrink-0 text-xs font-medium', st.cls)}>{st.label}</span>
               </div>
-              <ul className="text-muted-foreground list-disc space-y-0.5 pl-5 text-sm">
+              <ul className="text-foreground/80 list-disc space-y-1 pl-5 text-sm leading-relaxed">
                 {c.evidence.map((e) => (
                   <li key={e}>{e}</li>
                 ))}
@@ -55,10 +55,10 @@ function RecItem({ r, onLocate }: { r: Recommendation; onLocate?: (lat: number, 
   return (
     <div className={cn('bg-card rounded-lg border p-3', r.priority === 'wysoki' && 'border-primary/40 ring-primary/10 ring-1')}>
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <p className="font-medium">{r.title}</p>
+        <p className="text-base font-semibold">{r.title}</p>
         <Badge variant={PRIO[r.priority]}>{r.priority === 'wysoki' ? 'zrób w pierwszej kolejności' : `priorytet: ${r.priority}`}</Badge>
       </div>
-      <p className="text-sm">{r.action}</p>
+      <p className="text-[15px] leading-relaxed">{r.action}</p>
       {/* print/PDF: justification always visible */}
       <ul className="print-block text-muted-foreground mt-2 list-disc space-y-0.5 pl-5 text-xs">
         {r.why.map((w) => (
@@ -105,7 +105,7 @@ export function RecommendationsSection({ a, onLocate }: { a: Analysis; onLocate?
           const items = a.recommendations.filter((r) => r.stage === s.id)
           return (
             <section key={s.id}>
-              <h3 className="mb-2 font-semibold">{s.title}</h3>
+              <h3 className="mb-2 text-base font-semibold">{s.title}</h3>
               {items.length ? (
                 <div className="grid gap-2 lg:grid-cols-2">
                   {items.map((r) => (

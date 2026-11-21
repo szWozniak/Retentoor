@@ -5,9 +5,13 @@ import { cn } from '@/lib/utils'
 import { useHealth } from '@/hooks/useHealth'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { useSavedFields } from '@/lib/fields'
 
 /** Farmer-facing navigation. Developer pages (/demo, /records, /upload) stay reachable by URL only. */
-const links = [{ to: '/', label: 'Analiza działki' }]
+const links = [
+  { to: '/', label: 'Analiza działki' },
+  { to: '/pola', label: 'Moje pola' },
+]
 
 /** Reports always print in the light theme (white paper), regardless of the on-screen theme. */
 function usePrintLightTheme() {
@@ -32,6 +36,7 @@ function usePrintLightTheme() {
 export default function Layout() {
   usePrintLightTheme()
   const { data, error } = useHealth(15000)
+  const { fields } = useSavedFields()
   const up = !!data && !error
 
   return (
@@ -67,6 +72,9 @@ export default function Layout() {
                 }
               >
                 {l.label}
+                {l.to === '/pola' && fields.length > 0 && (
+                  <span className="bg-primary text-primary-foreground ml-1.5 rounded-full px-1.5 py-0.5 text-xs tabular-nums">{fields.length}</span>
+                )}
               </NavLink>
             ))}
           </nav>

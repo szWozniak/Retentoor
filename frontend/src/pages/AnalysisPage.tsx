@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Check, Loader2, MapPin } from 'lucide-react'
+import { Check, Loader2, LocateFixed, MapPin, Star } from 'lucide-react'
 import { api, type Analysis, type Crop, type Parcel } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,6 +14,7 @@ import { AnalysisResult } from '@/components/analysis/AnalysisResult'
 import { AnalysisProgress } from '@/components/analysis/AnalysisProgress'
 import { ReportHeader } from '@/components/analysis/ReportHeader'
 import { formatNumber } from '@/lib/format'
+import { useSavedFields } from '@/lib/fields'
 import { cn } from '@/lib/utils'
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
@@ -78,6 +79,33 @@ export default function AnalysisPage() {
   const [analysing, setAnalysing] = useState(false)
   const [focus, setFocus] = useState<{ lat: number; lon: number; t: number; zoom?: number } | null>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
+  const { fields, save, remove, isSaved, setCrop: rememberCrop } = useSavedFields()
+  const [userPos, setUserPos] = useState<{ lat: number; lon: number; accuracy: number } | null>(null)
+  const [locating, setLocating] = useState(false)
+
+  /** Farmers often check a field while standing on it: show where they are and offer the parcel under them. */
+  const locate = () => {
+    if (!navigator.geolocation) return toast.error('Ta przeglądarka nie udostępnia lokalizacji.')
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false)
+        const { latitude: lat, longitude: lon, accuracy } = pos.coords
+        setUserPos({ lat, lon, accuracy })
+        setFocus({ lat, lon, zoom: 17, t: Date.now() })
+        toast.success('Jesteś tutaj', {
+          description: 'Kliknij swoje pole na mapie albo wybierz działkę, na której stoisz.',
+          action: { label: 'Działka pode mną', onClick: () => loadParcel(() => api.parcelAt(lat, lon)) },
+          duration: 10000,
+        })
+      },
+      (err) => {
+        setLocating(false)
+        toast.error(err.code === err.PERMISSION_DENIED ? 'Brak zgody na lokalizację. Włącz ją w ustawieniach przeglądarki.' : 'Nie udało się ustalić lokalizacji.')
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+    )
+  }
 
   useEffect(() => {
     api.crops().then(setCrops).catch(() => toast.error('Nie udało się pobrać listy upraw'))
@@ -115,6 +143,7 @@ export default function AnalysisPage() {
     try {
       const a = await api.analyse(p.id, c, d)
       setAnalysis(a)
+      rememberCrop(p.id, c)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Analiza nie powiodła się')
     } finally {
@@ -164,9 +193,35 @@ export default function AnalysisPage() {
               }}
             />
 
-            {!parcel && (
+            <Button type="button" variant="outline" className="h-10 w-full" onClick={locate} disabled={locating}>
+              {locating ? <Loader2 className="animate-spin" /> : <LocateFixed />} Moja lokalizacja
+            </Button>
+
+            {!parcel && fields.length > 0 && (
               <div>
-                <p className="text-muted-foreground mb-1.5 text-xs">Przykładowe działki:</p>
+                <p className="text-muted-foreground mb-1.5 text-sm">Moje pola:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {fields.slice(0, 6).map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() =>
+                        loadParcel(() => api.parcelById(f.id)).then(() => {
+                          if (f.crop) setCrop(f.crop)
+                        })
+                      }
+                      className="hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-[3px]"
+                    >
+                      <Star className="text-primary size-3.5 fill-current" aria-hidden /> {f.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!parcel && fields.length === 0 && (
+              <div>
+                <p className="text-muted-foreground mb-1.5 text-sm">Przykładowe działki:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {SAMPLES.map((s) => (
                     <button
@@ -174,7 +229,7 @@ export default function AnalysisPage() {
                       type="button"
                       title={`${s.id} · ${s.hint}`}
                       onClick={() => loadParcel(() => api.parcelById(s.id))}
-                      className="hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-ring/50 rounded-full border px-2.5 py-1 text-xs transition-colors outline-none focus-visible:ring-[3px]"
+                      className="hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-ring/50 rounded-full border px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-[3px]"
                     >
                       {s.label}
                     </button>
@@ -185,9 +240,30 @@ export default function AnalysisPage() {
 
             {parcel && (
               <div className="animate-fade-up rounded-lg border p-3">
-                <p className="flex items-center gap-1.5 font-medium">
-                  <MapPin className="text-primary size-4" aria-hidden /> Działka {parcel.number}, obręb {parcel.region}
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="flex items-center gap-1.5 text-base font-semibold">
+                    <MapPin className="text-primary size-4 shrink-0" aria-hidden /> Działka {parcel.number}, obręb {parcel.region}
+                  </p>
+                  <Button
+                    type="button"
+                    variant={isSaved(parcel.id) ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => {
+                      if (isSaved(parcel.id)) {
+                        remove(parcel.id)
+                        toast('Usunięto z Moich pól')
+                      } else {
+                        save(parcel, crop || undefined)
+                        toast.success('Zapisano w Moich polach', { description: 'Nazwę możesz zmienić w zakładce Moje pola.' })
+                      }
+                    }}
+                    aria-pressed={isSaved(parcel.id)}
+                  >
+                    <Star className={isSaved(parcel.id) ? 'text-primary fill-current' : ''} />
+                    {isSaved(parcel.id) ? 'Zapisane' : 'Zapisz pole'}
+                  </Button>
+                </div>
                 <p className="text-muted-foreground mb-1 font-mono text-xs break-all">{parcel.id}</p>
                 <Row label="Powierzchnia" value={`${formatNumber(Math.round(parcel.area_ha * 100) / 100)} ha`} />
                 <Row label="Gmina" value={`${parcel.commune} (${parcel.county})`} />
@@ -206,6 +282,9 @@ export default function AnalysisPage() {
           parcel={parcel}
           markers={analysis?.recommendations.filter((r) => r.location).map((r) => ({ ...r.location! }))}
           focus={focus}
+          userPos={userPos}
+          onLocate={locate}
+          locating={locating}
           busy={busy}
           onPick={(lat, lon) => loadParcel(() => api.parcelAt(lat, lon))}
           className="print-map h-[48vh] min-h-[340px] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-auto lg:min-h-[560px]"

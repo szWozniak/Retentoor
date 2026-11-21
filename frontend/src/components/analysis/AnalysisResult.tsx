@@ -107,8 +107,8 @@ function StatusBanner({ a }: { a: Analysis }) {
         <t.icon className="size-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-lg leading-snug font-semibold text-balance">{v.title}</p>
-        <p className="text-muted-foreground mt-1 text-sm text-pretty">{v.text}</p>
+        <p className="text-xl leading-snug font-semibold text-balance sm:text-2xl">{v.title}</p>
+        <p className="text-foreground/80 mt-1 text-base text-pretty">{v.text}</p>
         {a.recommendations.length > 0 && (
           <a href="#rekomendacje" className="no-print text-primary mt-2 inline-flex items-center gap-1 text-sm font-medium hover:underline">
             Co możesz zrobić ({a.recommendations.length}) <ArrowDown className="size-3.5" aria-hidden />

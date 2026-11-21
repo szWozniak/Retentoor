@@ -42,7 +42,8 @@ class Parcel:
 
 
 async def _request(params: dict) -> str:
-    async with httpx.AsyncClient(timeout=20) as client:
+    # GUGiK moved the service behind a redirect (uldk.gugik.gov.pl -> integracja01.gugik.gov.pl)
+    async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
         r = await client.get(ULDK_URL, params=params)
         r.raise_for_status()
         return r.text
@@ -55,9 +56,12 @@ def _parse(text: str, fetched_at: datetime, from_cache: bool) -> Parcel:
         raise ParcelNotFound(lines[0] if lines else "empty response")
     fields = lines[1].split("|")
     if len(fields) < 7:
-        raise UldkError(f"Unexpected ULDK response: {lines[1][:200]}")
+        raise UldkError(f"Unexpected ULDK response: {lines[1][:80]}")
     geom_wkt, pid, voiv, county, commune, region, number = fields[:7]
-    geom = wkt.loads(geom_wkt.split(";", 1)[-1])  # strip "SRID=4326;"
+    try:
+        geom = wkt.loads(geom_wkt.split(";", 1)[-1])  # strip "SRID=4326;"
+    except Exception as e:  # noqa: BLE001 – shapely raises its own error types
+        raise UldkError("Unexpected ULDK geometry") from e
     area_m2 = abs(_geod.geometry_area_perimeter(geom)[0])
     c = geom.representative_point()
     return Parcel(
@@ -80,14 +84,17 @@ async def _lookup(cache_key: str, params: dict) -> Parcel:
         text = await _request(params)
         if text.strip().startswith("-1"):
             raise ParcelNotFound(text.strip().splitlines()[0])
+        _parse(text, datetime.now(), False)  # validate before caching: never store a broken answer
         return text
 
     try:
         text, fetched_at, hit = await cache.cached("uldk", cache_key, fetch)  # parcels rarely change: no expiry
     except ParcelNotFound:
         raise
-    except httpx.HTTPError as e:
-        raise UldkError(f"ULDK niedostępne: {e}") from e
+    except (httpx.HTTPError, UldkError, ValueError) as e:
+        raise UldkError(
+            "Usługa GUGiK z granicami działek (ULDK) chwilowo nie odpowiada poprawnie. Spróbuj ponownie za kilka minut."
+        ) from e
     return _parse(text, fetched_at, hit)
 
 

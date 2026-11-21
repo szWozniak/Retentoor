@@ -225,7 +225,7 @@ export default function AnalysisPage() {
                           if (f.crop) setCrop(f.crop)
                         })
                       }
-                      className="hover:bg-foreground/8 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors"
+                      className="hover:bg-foreground/8 flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors"
                     >
                       <Star className="text-primary size-3.5 fill-current" aria-hidden /> {f.name}
                     </button>
@@ -244,7 +244,7 @@ export default function AnalysisPage() {
                       type="button"
                       title={`${s.id} · ${s.hint}`}
                       onClick={() => loadParcel(() => api.parcelById(s.id))}
-                      className="hover:bg-foreground/8 rounded-full border px-3 py-1.5 text-sm transition-colors"
+                      className="hover:bg-foreground/8 rounded-md border px-3 py-1.5 text-sm transition-colors"
                     >
                       {s.label}
                     </button>

@@ -8,8 +8,8 @@
 
 /* ============================================================================
    Design system – see docs/design-system.md
-   Colour roles: Material 3 tonal scheme generated from the brand seed #1d6b42
-   (@material/material-color-utilities, SchemeTonalSpot). Typography and
+   Colour roles: Material 3 roles, brand green taken from the KOWR logo
+   (grass #007a33, bottle #004830), near-neutral surfaces, small radii. Typography and
    accessibility rules follow Polish public-service practice (gov.pl): Lato,
    two weights (400/700), body >= 15 px, strong visible focus, underlined links.
    shadcn/ui variable names are kept and mapped onto the M3 roles.
@@ -36,14 +36,14 @@
   --text-4xl: 2.25rem;    --text-4xl--line-height: 2.75rem;  /* 36/44 display-sm   */
 
   /* M3 shape scale */
-  --radius-xs: 0.25rem;  /* 4 */
-  --radius-sm: 0.25rem;  /* 4  – small items inside controls */
-  --radius-md: 0.5rem;   /* 8  – buttons, inputs */
-  --radius-lg: 0.5rem;   /* 8 */
-  --radius-xl: 0.75rem;  /* 12 – cards */
-  --radius-2xl: 1rem;    /* 16 – dialogs */
-  --radius-3xl: 1rem;
-  --radius-4xl: 0.5rem;  /* badges = M3 chips (8) */
+  --radius-xs: 0.125rem; /* 2 */
+  --radius-sm: 0.125rem; /* 2  – small items inside controls */
+  --radius-md: 0.25rem;  /* 4  – buttons, inputs (gov.pl) */
+  --radius-lg: 0.25rem;  /* 4 */
+  --radius-xl: 0.375rem; /* 6  – cards */
+  --radius-2xl: 0.5rem;  /* 8  – dialogs */
+  --radius-3xl: 0.5rem;
+  --radius-4xl: 0.25rem; /* badges (4) */
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -108,37 +108,37 @@
 }
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.25rem;
 
   /* M3 light scheme */
-  --background: #f6fbf3;            /* surface */
-  --foreground: #181d19;            /* on-surface */
+  --background: #f7f9f7;            /* surface */
+  --foreground: #161b17;            /* on-surface */
   --card: #ffffff;                  /* surface-container-lowest */
-  --card-foreground: #181d19;
+  --card-foreground: #161b17;
   --popover: #ffffff;
-  --popover-foreground: #181d19;
-  --primary: #2b6a46;
+  --popover-foreground: #161b17;
+  --primary: #007a33;
   --primary-foreground: #ffffff;
-  --primary-container: #aff1c3;
-  --on-primary-container: #0d5130;
-  --secondary: #d1e8d5;             /* secondary-container */
-  --secondary-foreground: #374b3d;
-  --muted: #eaefe8;                 /* surface-container */
-  --muted-foreground: #414942;      /* on-surface-variant */
-  --accent: #e5eae2;                /* surface-container-high (hover) */
-  --accent-foreground: #181d19;
+  --primary-container: #c4f2cd;
+  --on-primary-container: #004830;
+  --secondary: #dfeee2;             /* secondary-container */
+  --secondary-foreground: #2f4535;
+  --muted: #eef1ee;                 /* surface-container */
+  --muted-foreground: #3f4741;      /* on-surface-variant */
+  --accent: #e6ebe6;                /* surface-container-high (hover) */
+  --accent-foreground: #161b17;
   --destructive: #ba1a1a;
-  --border: #c0c9c0;                /* outline-variant */
-  --input: #717971;                 /* outline – form fields need >= 3:1 */
-  --outline: #717971;
-  --ring: #2b6a46;
-  --surface-container-low: #f0f5ee;
-  --surface-container: #eaefe8;
-  --surface-container-high: #e5eae2;
+  --border: #c4cbc5;                /* outline-variant */
+  --input: #6f7770;                 /* outline – form fields need >= 3:1 */
+  --outline: #6f7770;
+  --ring: #007a33;
+  --surface-container-low: #f2f5f2;
+  --surface-container: #eef1ee;
+  --surface-container-high: #e6ebe6;
 
-  --success: #2b6a46;               /* = primary: one brand green everywhere */
-  --success-container: #aff1c3;     /* = primary-container */
-  --on-success-container: #0d5130;
+  --success: #007a33;               /* = primary: one brand green everywhere */
+  --success-container: #c4f2cd;     /* = primary-container */
+  --on-success-container: #004830;
   --warning: #7d5800;
   --warning-container: #ffdea9;
   --on-warning-container: #271900;
@@ -159,46 +159,46 @@
   --status-serious: #ec835a;
   --status-critical: #d03b3b;
 
-  --sidebar: #f0f5ee;
-  --sidebar-foreground: #181d19;
-  --sidebar-primary: #2b6a46;
+  --sidebar: #f2f5f2;
+  --sidebar-foreground: #161b17;
+  --sidebar-primary: #007a33;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e5eae2;
-  --sidebar-accent-foreground: #181d19;
-  --sidebar-border: #c0c9c0;
-  --sidebar-ring: #2b6a46;
+  --sidebar-accent: #e6ebe6;
+  --sidebar-accent-foreground: #161b17;
+  --sidebar-border: #c4cbc5;
+  --sidebar-ring: #007a33;
 }
 
 .dark {
   /* M3 dark scheme */
-  --background: #0f1511;
-  --foreground: #dfe4dd;
-  --card: #181d19;                  /* surface-container-low */
-  --card-foreground: #dfe4dd;
-  --popover: #262b27;               /* surface-container-high */
-  --popover-foreground: #dfe4dd;
-  --primary: #94d5a9;
-  --primary-foreground: #00391e;
-  --primary-container: #0d5130;
-  --on-primary-container: #aff1c3;
-  --secondary: #374b3d;
-  --secondary-foreground: #d1e8d5;
-  --muted: #1c211d;
-  --muted-foreground: #c0c9c0;
-  --accent: #262b27;
-  --accent-foreground: #dfe4dd;
+  --background: #0e1210;
+  --foreground: #e1e5e1;
+  --card: #171b18;                  /* surface-container-low */
+  --card-foreground: #e1e5e1;
+  --popover: #232824;               /* surface-container-high */
+  --popover-foreground: #e1e5e1;
+  --primary: #5fd67f;
+  --primary-foreground: #00391a;
+  --primary-container: #00522a;
+  --on-primary-container: #b9f2c4;
+  --secondary: #2c3d31;
+  --secondary-foreground: #d4ebd8;
+  --muted: #1b201c;
+  --muted-foreground: #c2c9c3;
+  --accent: #232824;
+  --accent-foreground: #e1e5e1;
   --destructive: #ffb4ab;
-  --border: #414942;
-  --input: #8a938b;
-  --outline: #8a938b;
-  --ring: #94d5a9;
-  --surface-container-low: #181d19;
-  --surface-container: #1c211d;
-  --surface-container-high: #262b27;
+  --border: #3f4741;
+  --input: #8b938c;
+  --outline: #8b938c;
+  --ring: #5fd67f;
+  --surface-container-low: #171b18;
+  --surface-container: #1b201c;
+  --surface-container-high: #232824;
 
-  --success: #94d5a9;               /* = primary */
-  --success-container: #1f2b23;     /* surface tinted with primary – quiet on dark */
-  --on-success-container: #dfe4dd;
+  --success: #5fd67f;               /* = primary */
+  --success-container: #16291c;     /* surface tinted with primary – quiet on dark */
+  --on-success-container: #e1e5e1;
   --warning: #f9bc46;
   --warning-container: #33291a;
   --on-warning-container: #ffdea9;
@@ -215,14 +215,14 @@
   --chart-7: #9085e9;
   --chart-8: #e66767;
 
-  --sidebar: #181d19;
-  --sidebar-foreground: #dfe4dd;
-  --sidebar-primary: #94d5a9;
-  --sidebar-primary-foreground: #00391e;
-  --sidebar-accent: #262b27;
-  --sidebar-accent-foreground: #dfe4dd;
-  --sidebar-border: #414942;
-  --sidebar-ring: #94d5a9;
+  --sidebar: #171b18;
+  --sidebar-foreground: #e1e5e1;
+  --sidebar-primary: #5fd67f;
+  --sidebar-primary-foreground: #00391a;
+  --sidebar-accent: #232824;
+  --sidebar-accent-foreground: #e1e5e1;
+  --sidebar-border: #3f4741;
+  --sidebar-ring: #5fd67f;
 }
 
 @layer base {

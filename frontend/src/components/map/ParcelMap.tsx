@@ -24,12 +24,12 @@ const POLAND_CENTER: L.LatLngTuple = [52.1, 19.4]
 
 /** Same roles as the UI (light-theme M3 values): dark stroke = colour role, light fill = its container. */
 export const LANDUSE_STYLE: Record<LandUse['class'], { stroke: string; fill: string }> = {
-  rolna: { stroke: '#2b6a46', fill: '#aff1c3' }, // primary / primary-container
+  rolna: { stroke: '#007a33', fill: '#c4f2cd' }, // primary / primary-container
   mieszana: { stroke: '#7d5800', fill: '#ffdea9' }, // warning
   nierolna: { stroke: '#ba1a1a', fill: '#ffdad6' }, // error
-  nieznana: { stroke: '#717971', fill: '#dfe4dd' }, // land use still loading / unknown: neutral grey (outline role)
+  nieznana: { stroke: '#6f7770', fill: '#e1e5e1' }, // land use still loading / unknown: neutral grey (outline role)
 }
-const MARKER = '#2b6a46'
+const MARKER = '#007a33'
 
 /**
  * Loading priority on a slow connection: parcel grid (high) → orthophoto (normal) → ditches (low, added only after
@@ -259,14 +259,14 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
         </button>
       )}
       {zoom < PARCELS_MIN_ZOOM && (
-        <div className="pointer-events-none absolute top-3 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-black/70 px-3 py-1.5 text-center text-xs text-white">
+        <div className="pointer-events-none absolute top-3 left-1/2 z-[1000] -translate-x-1/2 rounded-md bg-black/70 px-3 py-1.5 text-center text-xs text-white">
           Przybliż mapę, aby zobaczyć granice działek, albo kliknij w swoje pole
         </div>
       )}
       {busy && (
         // blocks further clicks until the lookup finishes
         <div className="bg-background/20 absolute inset-0 z-[1000] grid place-items-center" aria-live="polite">
-          <span className="bg-background text-foreground flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold shadow-lg">
+          <span className="bg-background text-foreground flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-bold shadow-lg">
             <Loader2 className="text-primary size-4 animate-spin" aria-hidden /> Szukam działki…
           </span>
         </div>

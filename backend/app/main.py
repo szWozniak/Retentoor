@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .routers import analysis, geocode, parcels
+from .services import status
 
 # Stateless API: everything is computed from live open data; external responses are cached as files
 # (services/cache.py). No database.
@@ -33,3 +34,9 @@ def health():
         "uptime_s": round(time.time() - STARTED_AT),
         "server_time": datetime.now(timezone.utc).isoformat(),
     }
+
+
+@app.get("/api/health/sources")
+async def health_sources(fresh: bool = False):
+    """Are the live GUGiK services reachable from this server? (result cached for 60 s)"""
+    return await status.check(fresh)

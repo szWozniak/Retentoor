@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Logo } from '@/components/Logo'
+import { ServiceBanner } from '@/components/ServiceBanner'
 import { useSavedFields } from '@/lib/fields'
 
 /** Farmer-facing navigation. */
@@ -74,6 +75,7 @@ export default function Layout() {
           </div>
         </div>
       </header>
+      <ServiceBanner />
 
       <main id="main" className="mx-auto grid w-full max-w-page flex-1 grid-cols-1 content-start gap-6 px-4 py-6">
         <Outlet />

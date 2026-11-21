@@ -46,6 +46,8 @@ async def _request(params: dict) -> str:
     async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
         r = await client.get(ULDK_URL, params=params)
         r.raise_for_status()
+        if "/resp/" in str(r.url):  # GUGiK per-IP limit: placeholder instead of data
+            raise UldkError("limit")
         return r.text
 
 
@@ -91,7 +93,16 @@ async def _lookup(cache_key: str, params: dict) -> Parcel:
         text, fetched_at, hit = await cache.cached("uldk", cache_key, fetch)  # parcels rarely change: no expiry
     except ParcelNotFound:
         raise
-    except (httpx.HTTPError, UldkError, ValueError) as e:
+    except UldkError as e:
+        if str(e) == "limit":
+            raise UldkError(
+                "GUGiK chwilowo zablokował zapytania z tej sieci (przekroczony limit). "
+                "Wcześniej sprawdzone działki i Moje pola działają. Nowe działki spróbuj za kilka minut albo z innej sieci."
+            ) from e
+        raise UldkError(
+            "Usługa GUGiK z granicami działek (ULDK) chwilowo nie odpowiada poprawnie. Spróbuj ponownie za kilka minut."
+        ) from e
+    except (httpx.HTTPError, ValueError) as e:
         raise UldkError(
             "Usługa GUGiK z granicami działek (ULDK) chwilowo nie odpowiada poprawnie. Spróbuj ponownie za kilka minut."
         ) from e

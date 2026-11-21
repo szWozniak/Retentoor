@@ -51,7 +51,6 @@ export function ReportOutline({ items }: { items: OutlineItem[] }) {
 
   return (
     <nav aria-label="Spis treści raportu" className="no-print sticky top-6 hidden self-start xl:block">
-      <p className="text-muted-foreground mb-3 pl-7 text-[11px] font-medium tracking-wider uppercase">W tym raporcie</p>
       <ol className="relative">
         {/* track + progress */}
         <span aria-hidden className="bg-border absolute top-2 bottom-2 left-[9px] w-px" />

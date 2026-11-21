@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowDown, CalendarRange, CheckCircle2, Droplets, Info } from 'lucide-react'
+import { AlertTriangle, ArrowDown, CalendarRange, CheckCircle2 } from 'lucide-react'
 import { CartesianGrid, ComposedChart, Line, ReferenceLine, Scatter, XAxis, YAxis } from 'recharts'
 import type { Analysis } from '@/api'
 import { Badge } from '@/components/ui/badge'
@@ -107,12 +107,11 @@ function StatusBanner({ a }: { a: Analysis }) {
         <t.icon className="size-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-muted-foreground text-xs font-medium">Ocena sytuacji wodnej · stan na {formatDate(a.analysis_date)}</p>
-        <p className="mt-0.5 text-lg leading-snug font-semibold text-balance">{v.title}</p>
+        <p className="text-lg leading-snug font-semibold text-balance">{v.title}</p>
         <p className="text-muted-foreground mt-1 text-sm text-pretty">{v.text}</p>
         {a.recommendations.length > 0 && (
           <a href="#rekomendacje" className="no-print text-primary mt-2 inline-flex items-center gap-1 text-sm font-medium hover:underline">
-            Zobacz, co możesz zrobić ({a.recommendations.length} rekomendacji) <ArrowDown className="size-3.5" aria-hidden />
+            Co możesz zrobić ({a.recommendations.length}) <ArrowDown className="size-3.5" aria-hidden />
           </a>
         )}
       </div>
@@ -217,7 +216,6 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
           label="Bilans wodny, ostatnie 60 dni"
           value={mm(w.kbw)}
           hint={w.median_hist !== null ? `mediana z 10 lat: ${mm(w.median_hist)}` : undefined}
-          icon={<Droplets className="size-4" />}
         />
         <KpiCard
           label="Na tle ostatnich 10 lat"
@@ -227,26 +225,25 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
               ? undefined
               : w.percentile === 0
                 ? 'najsuchsze 60 dni w tym terminie od 10 lat'
-                : `suchsze niż ${100 - w.percentile}% lat (${w.percentile}. percentyl)`
+                : `suchsze niż ${100 - w.percentile}% lat`
           }
         />
         <KpiCard
-          label="Lata z suszą (z 10)"
+          label="Lata z suszą"
           value={a.history.years_total ? `${a.history.years_with_drought} / ${a.history.years_total}` : '–'}
-          hint={worst && worst.share > 0 ? `najczęściej w okresie ${worst.period}` : 'w żadnym okresie'}
+          hint={worst && worst.share > 0 ? `najczęściej w okresie ${worst.period}` : undefined}
         />
         <KpiCard
           label="Gleba (IUNG)"
           value={a.soil.category ? `kat. ${a.soil.category}` : a.soil.code === 5 ? 'organiczna' : '–'}
-          hint={`${a.soil.n_points} pkt w działce`}
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Bilans wodny w {new Date(a.analysis_date).getFullYear()} r. na tle wielolecia</CardTitle>
+          <CardTitle>Bilans wodny w {new Date(a.analysis_date).getFullYear()} r.</CardTitle>
           <CardDescription>
-            Opad minus parowanie w kroczącym oknie 60 dni, w mm (metoda IUNG). Im niżej, tym bardziej sucho. Romby to progi suszy dla wybranej uprawy i gleby.
+            Opad minus parowanie w oknie 60 dni, w mm (metoda IUNG).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -259,8 +256,7 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
       {a.history.years.length > 0 && (
         <Card id="historia" data-section>
           <CardHeader>
-            <CardTitle>Historia suszy na tej działce (10 lat)</CardTitle>
-            <CardDescription>Każda kratka to jeden 60-dniowy okres IUNG.<span className="no-print"> Najedź, by zobaczyć wartości.</span></CardDescription>
+            <CardTitle>Historia suszy, 10 lat</CardTitle>
           </CardHeader>
           <CardContent>
             <HistoryGrid a={a} />
@@ -281,7 +277,7 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
       <Card id="zrodla" data-section>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Info className="size-4" /> Wiarygodność i źródła
+            Wiarygodność i źródła
             <Badge variant={a.confidence === 'wysoki' ? 'default' : a.confidence === 'średni' ? 'secondary' : 'outline'}>
               pewność: {a.confidence}
             </Badge>
@@ -311,7 +307,6 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
               ))}
             </ul>
           </div>
-          <p className="text-muted-foreground text-xs">Analiza na dzień {formatDate(a.analysis_date)} · wyliczona w {a.elapsed_s} s</p>
         </CardContent>
       </Card>
       </div>

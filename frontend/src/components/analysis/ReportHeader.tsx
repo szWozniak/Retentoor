@@ -39,7 +39,6 @@ export function ReportHeader({ a, savedId, createdAt }: { a: Analysis; savedId?:
   return (
     <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-3">
       <div>
-        <p className="text-muted-foreground text-xs tracking-wide uppercase">Raport – ocena sytuacji wodnej działki</p>
         <h2 className="text-xl font-semibold tracking-tight">
           Działka {a.parcel.number}, obręb {a.parcel.region} · {a.crop.name}
         </h2>

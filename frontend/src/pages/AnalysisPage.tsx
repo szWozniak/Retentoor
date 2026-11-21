@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Check, CloudSun, FileText, Layers, Loader2, MapPin, MousePointerClick, Sprout } from 'lucide-react'
+import { Check, Loader2, MapPin } from 'lucide-react'
 import { api, type Analysis, type Crop, type Parcel } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -55,33 +55,13 @@ function StepTitle({ n, done, children }: { n: number; done: boolean; children: 
 }
 
 function Intro() {
-  const items = [
-    { icon: MousePointerClick, title: 'Wskaż działkę', text: 'numerem ewidencyjnym albo kliknięciem na mapie' },
-    { icon: Sprout, title: 'Wybierz uprawę', text: 'i dzień, na który chcesz ocenić sytuację' },
-    { icon: FileText, title: 'Dostań raport', text: 'ocena suszy, przyczyny i konkretne działania' },
-  ]
   return (
-    <section className="animate-fade-up grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">Sprawdź, jak zatrzymać wodę na swoim polu</h1>
-        <p className="text-muted-foreground mt-1 max-w-2xl text-pretty">
-          Bezpłatne narzędzie, które łączy dane pogodowe z 10 lat, mapy glebowe, ukształtowanie terenu i dane hydrologiczne, a potem mówi
-          prostym językiem, czy Twojej działce grozi susza i co możesz zrobić.
-        </p>
-      </div>
-      <ol className="grid gap-2 sm:grid-cols-3 lg:w-[620px]">
-        {items.map((it, i) => (
-          <li key={it.title} className="bg-card flex gap-3 rounded-xl border p-3">
-            <it.icon className="text-primary mt-0.5 size-5 shrink-0" aria-hidden />
-            <span className="text-sm">
-              <span className="block font-medium">
-                {i + 1}. {it.title}
-              </span>
-              <span className="text-muted-foreground">{it.text}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
+    <section className="animate-fade-up">
+      <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">Sprawdź, jak zatrzymać wodę na swoim polu</h1>
+      <p className="text-muted-foreground mt-1 max-w-2xl text-pretty">
+        Łączy dane pogodowe z 10 lat, mapy glebowe, ukształtowanie terenu i dane hydrologiczne. Pokazuje, czy działce grozi susza i co możesz
+        zrobić.
+      </p>
     </section>
   )
 }
@@ -170,7 +150,7 @@ export default function AnalysisPage() {
             <StepTitle n={1} done={!!parcel}>
               Wskaż działkę
             </StepTitle>
-            <CardDescription>Wpisz numer działki albo nazwę miejscowości (mapa się przybliży), a potem kliknij swoje pole.</CardDescription>
+            <CardDescription>Albo kliknij swoje pole na mapie.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             <PlaceSearch
@@ -186,7 +166,7 @@ export default function AnalysisPage() {
 
             {!parcel && (
               <div>
-                <p className="text-muted-foreground mb-1.5 text-xs">Nie masz numeru pod ręką? Wypróbuj przykładową działkę:</p>
+                <p className="text-muted-foreground mb-1.5 text-xs">Przykładowe działki:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {SAMPLES.map((s) => (
                     <button
@@ -236,7 +216,7 @@ export default function AnalysisPage() {
             <StepTitle n={2} done={!!analysis}>
               Uprawa i data
             </StepTitle>
-            <CardDescription>Dla jakiej uprawy ocenić ryzyko suszy? Domyślnie na dziś – możesz wybrać dowolny dzień z ostatnich 10 lat.</CardDescription>
+            <CardDescription>Dowolny dzień z ostatnich 10 lat.</CardDescription>
           </CardHeader>
           <CardContent>
             <form
@@ -285,17 +265,6 @@ export default function AnalysisPage() {
                 )}
               </Button>
               {!parcel && <p className="text-muted-foreground text-center text-xs">Najpierw wskaż działkę.</p>}
-              <p className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
-                <span className="flex items-center gap-1">
-                  <CloudSun className="size-3" aria-hidden /> pogoda z 10 lat
-                </span>
-                <span className="flex items-center gap-1">
-                  <Layers className="size-3" aria-hidden /> gleba, teren, wody
-                </span>
-                <span className="flex items-center gap-1">
-                  <Sprout className="size-3" aria-hidden /> progi IUNG dla 14 upraw
-                </span>
-              </p>
             </form>
           </CardContent>
         </Card>

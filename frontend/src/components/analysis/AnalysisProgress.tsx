@@ -30,7 +30,7 @@ export function AnalysisProgress() {
       <CardContent className="grid gap-4 py-2 sm:grid-cols-[1fr_auto] sm:items-center">
         <div>
           <p className="font-semibold">Analizuję działkę…</p>
-          <p className="text-muted-foreground mb-3 text-sm">Zwykle trwa to 5–15 sekund. Wszystkie dane pobieramy na bieżąco z publicznych źródeł.</p>
+          <p className="text-muted-foreground mb-3 text-sm">Zwykle trwa to 5–15 sekund.</p>
           <ol className="grid gap-1.5 text-sm">
             {STEPS.map((s, i) => (
               <li key={s.label} className={cn('flex items-center gap-2 transition-opacity', i > current && 'opacity-40')}>
@@ -44,7 +44,6 @@ export function AnalysisProgress() {
                   {i < current ? <Check className="size-3" /> : i === current ? <Loader2 className="size-3 animate-spin" /> : null}
                 </span>
                 <span>{s.label}</span>
-                <span className="text-muted-foreground hidden text-xs sm:inline">· {s.src}</span>
               </li>
             ))}
           </ol>

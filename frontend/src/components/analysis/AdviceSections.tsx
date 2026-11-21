@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, CircleHelp, CircleMinus, Droplet, FileWarning, Leaf, MapPin, Mountain, Sprout, Tractor } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, CircleHelp, CircleMinus, FileWarning, MapPin } from 'lucide-react'
 import type { Analysis, Cause, Recommendation } from '@/api'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
@@ -16,8 +16,7 @@ export function CausesSection({ a }: { a: Analysis }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Dlaczego brakuje wody? Przyczyny</CardTitle>
-        <CardDescription>Każda przyczyna jest oceniona na podstawie danych dla tej działki.</CardDescription>
+        <CardTitle>Przyczyny</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3 md:grid-cols-2">
         {a.causes.map((c) => {
@@ -43,11 +42,11 @@ export function CausesSection({ a }: { a: Analysis }) {
   )
 }
 
-const STAGES: { id: Recommendation['stage']; title: string; desc: string; icon: typeof Leaf }[] = [
-  { id: 'retencja_krajobrazowa', title: '1. Zatrzymaj wodę w krajobrazie', desc: 'Najpierw zatrzymaj wodę tam, gdzie spada', icon: Mountain },
-  { id: 'retencja_glebowa', title: '2. Zwiększ retencję gleby', desc: 'Niech gleba magazynuje więcej wody', icon: Sprout },
-  { id: 'agrotechnika', title: '3. Działania agrotechniczne', desc: 'Uprawa i dobór roślin', icon: Tractor },
-  { id: 'nawadnianie', title: '4. Nawadnianie', desc: 'Dopiero na końcu – gdy retencja nie wystarcza', icon: Droplet },
+const STAGES: { id: Recommendation['stage']; title: string }[] = [
+  { id: 'retencja_krajobrazowa', title: '1. Zatrzymaj wodę w krajobrazie' },
+  { id: 'retencja_glebowa', title: '2. Zwiększ retencję gleby' },
+  { id: 'agrotechnika', title: '3. Działania agrotechniczne' },
+  { id: 'nawadnianie', title: '4. Nawadnianie' },
 ]
 
 const PRIO: Record<Recommendation['priority'], 'default' | 'secondary' | 'outline'> = { wysoki: 'default', średni: 'secondary', niski: 'outline' }
@@ -68,7 +67,7 @@ function RecItem({ r, onLocate }: { r: Recommendation; onLocate?: (lat: number, 
       </ul>
       <Accordion className="no-print mt-1">
         <AccordionItem value="why" className="border-none">
-          <AccordionTrigger className="text-primary py-1.5 text-xs">Dlaczego? Dane dla tej działki ({r.why.length})</AccordionTrigger>
+          <AccordionTrigger className="text-primary py-1.5 text-xs">Dlaczego? ({r.why.length})</AccordionTrigger>
           <AccordionContent keepMounted className="pb-1">
             <ul className="text-muted-foreground bg-muted/50 list-disc space-y-0.5 rounded-md py-2 pr-2 pl-6 text-xs">
               {r.why.map((w) => (
@@ -99,18 +98,14 @@ export function RecommendationsSection({ a, onLocate }: { a: Analysis; onLocate?
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Co możesz zrobić? Rekomendacje</CardTitle>
-        <CardDescription>W kolejności: najpierw retencja, na końcu nawadnianie. Każde zalecenie wynika z danych powyżej.</CardDescription>
+        <CardTitle>Co możesz zrobić</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-5">
         {STAGES.map((s) => {
           const items = a.recommendations.filter((r) => r.stage === s.id)
           return (
             <section key={s.id}>
-              <h3 className="mb-2 flex items-center gap-2 font-semibold">
-                <s.icon className="text-muted-foreground size-4" /> {s.title}
-                <span className="text-muted-foreground text-xs font-normal">· {s.desc}</span>
-              </h3>
+              <h3 className="mb-2 font-semibold">{s.title}</h3>
               {items.length ? (
                 <div className="grid gap-2 lg:grid-cols-2">
                   {items.map((r) => (
@@ -121,7 +116,7 @@ export function RecommendationsSection({ a, onLocate }: { a: Analysis; onLocate?
                 <p className="text-muted-foreground text-sm">
                   {s.id === 'nawadnianie' && a.irrigation?.decision === 'poza sezonem'
                     ? 'Uprawa poza okresem wegetacji w tym terminie – ocena nawadniania nie dotyczy.'
-                    : 'Brak zaleceń w tym obszarze dla tej działki (dane nie wskazują potrzeby).'}
+                    : 'Dane nie wskazują potrzeby działań.'}
                 </p>
               )}
             </section>
@@ -139,8 +134,8 @@ export function CropComparison({ a }: { a: Analysis }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Które uprawy najlepiej znoszą warunki tej działki?</CardTitle>
-        <CardDescription>Liczba sezonów z suszą (z ostatnich 10) dla każdej grupy upraw – te same dane pogodowe i gleba, progi IUNG.</CardDescription>
+        <CardTitle>Porównanie upraw</CardTitle>
+        <CardDescription>Sezony z suszą w ostatnich 10 latach, na tej samej glebie i pogodzie.</CardDescription>
       </CardHeader>
       <CardContent>
         <ul className="grid gap-1.5 text-sm">

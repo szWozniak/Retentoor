@@ -69,7 +69,7 @@ type Props = {
   parcel: Parcel | null
   markers?: MapMarker[]
   /** when set (new object each time), the map flies to this point */
-  focus?: { lat: number; lon: number; t: number } | null
+  focus?: { lat: number; lon: number; t: number; zoom?: number } | null
   onPick: (lat: number, lon: number) => void
   busy?: boolean
   className?: string
@@ -86,7 +86,7 @@ function ClickHandler({ onPick, onZoom }: { onPick: Props['onPick']; onZoom: (z:
 function FlyTo({ focus }: { focus: Props['focus'] }) {
   const map = useMap()
   useEffect(() => {
-    if (focus) map.flyTo([focus.lat, focus.lon], Math.max(map.getZoom(), 18), { duration: 0.6 })
+    if (focus) map.flyTo([focus.lat, focus.lon], focus.zoom ?? Math.max(map.getZoom(), 18), { duration: focus.zoom && focus.zoom < 16 ? 1.2 : 0.6 })
   }, [focus, map])
   return null
 }

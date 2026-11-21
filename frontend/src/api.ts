@@ -53,6 +53,8 @@ export type LandUse = {
 
 export type Crop = { id: string; name: string }
 
+export type Place = { label: string; sub: string; lat: number; lon: number; kind: 'place' | 'address'; zoom: number; source: string }
+
 export type PeriodResult = {
   period: string
   start: string
@@ -175,6 +177,7 @@ export const api = {
   parcelById: (id: string) => request<Parcel>(`/parcels/by-id?id=${encodeURIComponent(id.trim())}`),
   parcelAt: (lat: number, lon: number) => request<Parcel>(`/parcels/at?lat=${lat}&lon=${lon}`),
   crops: () => request<Crop[]>('/analysis/crops'),
+  geocode: (q: string, full = false) => request<Place[]>(`/geocode?q=${encodeURIComponent(q)}${full ? '&full=true' : ''}`),
   saveReport: (parcelId: string, crop: string, date: string) =>
     request<{ id: string }>(`/reports?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`, { method: 'POST' }),
   getReport: (id: string) => request<{ id: string; created_at: string; analysis: Analysis }>(`/reports/${encodeURIComponent(id)}`),

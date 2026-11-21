@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Check, CloudSun, FileText, Layers, Loader2, MapPin, MousePointerClick, Search, Sprout } from 'lucide-react'
+import { Check, CloudSun, FileText, Layers, Loader2, MapPin, MousePointerClick, Sprout } from 'lucide-react'
 import { api, type Analysis, type Crop, type Parcel } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ParcelMap } from '@/components/map/ParcelMap'
 import { LandUseNotice } from '@/components/map/LandUseNotice'
+import { PlaceSearch } from '@/components/map/PlaceSearch'
 import { AnalysisResult } from '@/components/analysis/AnalysisResult'
 import { AnalysisProgress } from '@/components/analysis/AnalysisProgress'
 import { ReportHeader } from '@/components/analysis/ReportHeader'
@@ -97,7 +98,7 @@ export default function AnalysisPage() {
   const [date, setDate] = useState(params.get('data') ?? todayIso())
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [analysing, setAnalysing] = useState(false)
-  const [focus, setFocus] = useState<{ lat: number; lon: number; t: number } | null>(null)
+  const [focus, setFocus] = useState<{ lat: number; lon: number; t: number; zoom?: number } | null>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -153,11 +154,6 @@ export default function AnalysisPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const onSearch = (e: FormEvent) => {
-    e.preventDefault()
-    if (!query.trim()) return toast.warning('Wpisz numer działki, np. 260104_5.0016.78')
-    loadParcel(() => api.parcelById(query))
-  }
 
   const showIntro = !parcel && !analysis && !analysing && !busy
 
@@ -176,22 +172,19 @@ export default function AnalysisPage() {
             <StepTitle n={1} done={!!parcel}>
               Wskaż działkę
             </StepTitle>
-            <CardDescription>Wpisz numer działki ewidencyjnej albo kliknij swoje pole na mapie.</CardDescription>
+            <CardDescription>Wpisz numer działki albo nazwę miejscowości (mapa się przybliży), a potem kliknij swoje pole.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <form onSubmit={onSearch} className="flex gap-2" role="search">
-              <Input
-                className="h-10"
-                placeholder="np. 260104_5.0016.78"
-                aria-label="Numer działki ewidencyjnej"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                spellCheck={false}
-              />
-              <Button type="submit" size="icon" className="size-10" disabled={busy} aria-label="Szukaj działki">
-                {busy ? <Loader2 className="animate-spin" /> : <Search />}
-              </Button>
-            </form>
+            <PlaceSearch
+              value={query}
+              onChange={setQuery}
+              busy={busy}
+              onParcelId={(id) => loadParcel(() => api.parcelById(id))}
+              onPlace={(p) => {
+                setFocus({ lat: p.lat, lon: p.lon, zoom: p.zoom, t: Date.now() })
+                toast.info(`${p.label}: teraz kliknij swoje pole na mapie`, { description: 'Granice działek pojawią się po przybliżeniu.' })
+              }}
+            />
 
             {!parcel && (
               <div>

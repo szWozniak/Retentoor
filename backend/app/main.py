@@ -9,7 +9,7 @@ from sqlmodel import Session
 
 from .config import settings
 from .db import engine, init_db
-from .routers import analysis, files, parcels, records
+from .routers import analysis, files, geocode, parcels, records
 
 
 @asynccontextmanager
@@ -31,6 +31,7 @@ app.include_router(files.router, prefix="/api")
 app.include_router(parcels.router, prefix="/api")
 app.include_router(analysis.router, prefix="/api")
 app.include_router(analysis.reports, prefix="/api")
+app.include_router(geocode.router, prefix="/api")
 
 
 STARTED_AT = time.time()

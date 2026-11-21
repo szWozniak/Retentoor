@@ -40,11 +40,10 @@ cd backend
 | Endpoint | What it does |
 |---|---|
 | `GET /api/health` | health check |
-| `GET/POST /api/records`, `GET/PATCH/DELETE /api/records/{id}` | CRUD on a generic `Record` (title, content, label, source) with `?q=` search and `?label=` filter |
-| `POST /api/files` | upload a file; CSV/XLSX/JSON returns a preview (row count, columns, first 20 rows) |
+| `GET /api/parcels/by-id?id=`, `GET /api/parcels/at?lat=&lon=` | parcel geometry (ULDK); `landuse=false` skips the slower land-use step |
+| `GET /api/parcels/landuse?id=` | land-use class of a parcel (IUNG) |
+| `GET /api/analysis?parcel_id=&crop=&date=` | full report (assessment, history, causes, recommendations) |
+| `GET /api/analysis/crops` | crop list |
+| `GET /api/geocode?q=` | place / address search (GUGiK UUG, Nominatim fallback) |
 
-## Adapting to the challenge
-
-1. Rename/extend `Record` in `backend/app/models.py` (delete `backend/data/app.db` after schema changes — no migrations).
-2. Add a router in `backend/app/routers/` and register it in `app/main.py`.
-3. Mirror types and calls in `frontend/src/api.ts`, build UI in `frontend/src/`.
+No database: external API responses are cached as JSON files in `backend/data/cache/` (`services/cache.py`). A report is shared as a link with its parameters (`/raport?dzialka=&uprawa=&data=`) and recomputed when opened.

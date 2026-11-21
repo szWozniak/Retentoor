@@ -121,8 +121,8 @@ function StatusBanner({ a }: { a: Analysis }) {
 function KbwChart({ a }: { a: Analysis }) {
   const data = a.series.map((s) => ({ ...s }))
   const config = {
-    kbw: { label: `KBW 60 dni (${new Date(a.analysis_date).getFullYear()})`, color: 'var(--chart-1)' },
-    median: { label: 'Mediana z 10 lat', color: 'var(--chart-2)' },
+    kbw: { label: `KBW 60 dni (${new Date(a.analysis_date).getFullYear()})`, color: 'var(--primary)' },
+    median: { label: 'Mediana z 10 lat', color: 'var(--muted-foreground)' },
     threshold: { label: 'Próg suszy IUNG (koniec okresu)', color: 'var(--status-critical)' },
   }
   return (
@@ -147,10 +147,10 @@ function HistoryGrid({ a }: { a: Analysis }) {
   if (!periods.length) return null
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-separate border-spacing-0.5 text-xs">
+      <table className="w-full table-fixed border-separate border-spacing-0.5 text-xs">
         <thead>
           <tr>
-            <th className="text-muted-foreground pr-2 text-left font-normal">Rok</th>
+            <th className="text-muted-foreground w-12 pr-2 text-left font-normal">Rok</th>
             {periods.map((p) => (
               <th key={p} className="text-muted-foreground px-0.5 font-normal whitespace-nowrap" title={p}>
                 {p.split('-')[0]}
@@ -167,10 +167,10 @@ function HistoryGrid({ a }: { a: Analysis }) {
                 <TooltipTrigger
                   render={<td />}
                   className={cn(
-                    'h-6 min-w-6 rounded-sm text-center',
+                    'h-7 rounded-sm text-center',
                     p.drought === true && 'bg-status-critical font-bold text-white',
-                    p.drought === false && 'bg-success/15',
-                    p.drought === null && 'bg-muted',
+                    p.drought === false && 'bg-surface-container-high',
+                    p.drought === null && 'border-border border border-dashed',
                   )}
                 >
                   {p.drought === true ? '!' : ''}
@@ -193,8 +193,8 @@ function HistoryGrid({ a }: { a: Analysis }) {
       </table>
       <p className="text-muted-foreground mt-2 text-xs">
         <span className="bg-status-critical mr-1 inline-block size-3 rounded-sm align-middle" /> susza (KBW poniżej progu)
-        <span className="mr-1 ml-3 inline-block size-3 rounded-sm bg-success/15 align-middle" /> bez suszy
-        <span className="bg-muted mr-1 ml-3 inline-block size-3 rounded-sm align-middle" /> brak progu dla uprawy w tym okresie
+        <span className="bg-surface-container-high mr-1 ml-3 inline-block size-3 rounded-sm align-middle" /> bez suszy
+        <span className="border-border mr-1 ml-3 inline-block size-3 rounded-sm border border-dashed align-middle" /> brak progu dla uprawy w tym okresie
       </p>
     </div>
   )

@@ -51,6 +51,7 @@ function ParcelBoundaries() {
       maxZoom: 20,
       tileSize: 256,
       opacity: 0.85,
+      zIndex: 3, // above the ditches
       className: 'parcel-boundaries', // recoloured in index.css (server draws them blue)
       keepBuffer: 4,
       updateWhenZooming: false,
@@ -139,7 +140,9 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
           tileSize={512}
           minZoom={15}
           maxZoom={20}
-          opacity={0.9}
+          opacity={1}
+          zIndex={2}
+          className="ditch-lines"
           attribution="Rowy &copy; GUGiK (BDOT10k)"
         />
         {parcel && (
@@ -190,9 +193,6 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
         </div>
       )}
       <div className="pointer-events-none absolute bottom-8 left-3 z-[1000] flex flex-wrap gap-x-3 gap-y-1 rounded-md bg-background/90 px-2 py-1 text-xs text-foreground">
-        <span className="flex items-center gap-1">
-          <span className="h-0.5 w-3 rounded-full bg-chart-1" /> rów melioracyjny
-        </span>
         {(['rolna', 'mieszana', 'nierolna'] as const).map((c) => (
           <span key={c} className="flex items-center gap-1">
             <span className="size-2.5 rounded-sm" style={{ background: LANDUSE_COLORS[c] }} /> {c}

@@ -135,9 +135,9 @@
   --surface-container: #eaefe8;
   --surface-container-high: #e5eae2;
 
-  --success: #1b6d24;
-  --success-container: #c8f5c2;
-  --on-success-container: #002204;
+  --success: #2b6a46;               /* = primary: one brand green everywhere */
+  --success-container: #aff1c3;     /* = primary-container */
+  --on-success-container: #0d5130;
   --warning: #7d5800;
   --warning-container: #ffdea9;
   --on-warning-container: #271900;
@@ -195,14 +195,14 @@
   --surface-container: #1c211d;
   --surface-container-high: #262b27;
 
-  --success: #88d982;
-  --success-container: #1d3d24;
-  --on-success-container: #a3f69c;
+  --success: #94d5a9;               /* = primary */
+  --success-container: #1f2b23;     /* surface tinted with primary – quiet on dark */
+  --on-success-container: #dfe4dd;
   --warning: #f9bc46;
-  --warning-container: #5e4200;
+  --warning-container: #33291a;
   --on-warning-container: #ffdea9;
   --error: #ffb4ab;
-  --error-container: #93000a;
+  --error-container: #3b1f1d;
   --on-error-container: #ffdad6;
 
   --chart-1: #3987e5;
@@ -283,6 +283,12 @@
 @utility type-caption {
   font-size: var(--text-xs);
   line-height: var(--text-xs--line-height);
+}
+
+/* BDOT10k ditches come as hairlines; thicken them with stacked shadows in the water colour */
+.ditch-lines {
+  /* 1px hard shadows in 4 directions = solid line ~3px wider than the server hairline */
+  filter: drop-shadow(1px 0 0 #1e88e5) drop-shadow(-1px 0 0 #1e88e5) drop-shadow(0 1px 0 #1e88e5) drop-shadow(0 -1px 0 #1e88e5);
 }
 
 /* GUGiK parcel boundaries come as blue lines; turn them into thin white lines with a soft shadow

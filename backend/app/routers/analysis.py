@@ -60,7 +60,7 @@ async def analyse(
     )
 
     limitations: list[str] = [
-        "Ewapotranspirację liczymy metodą FAO-56 Penman-Monteith (Open-Meteo). IUNG stosuje zmodyfikowaną metodę Penmana, więc wartości KBW mogą się nieco różnić od komunikatów SMSR.",
+        "Parowanie potencjalne (ET₀) liczone jest metodą FAO-56 Penman-Monteith, a IUNG stosuje zmodyfikowaną metodę Penmana – wartości KBW mogą się nieco różnić od komunikatów SMSR.",
         "Granice działki odpowiadają obecnemu stanowi ewidencji (ULDK), także dla dat historycznych.",
     ]
     missing: list[str] = []
@@ -128,6 +128,8 @@ async def analyse(
         conf_score -= 1
     if window["coverage"] < 1:
         conf_score -= 1
+    if any("NASA POWER" in src["name"] for src in met.sources):
+        conf_score -= 1  # coarser fallback weather data
     confidence = {3: "wysoki", 2: "średni"}.get(conf_score, "niski")
 
     sg_d = asdict(sg) if sg else None
@@ -193,3 +195,49 @@ async def analyse(
         "meteo_cell": {"lat": met.lat, "lon": met.lon},
         "elapsed_s": round(time.perf_counter() - t0, 2),
     }
+
+
+# ------------------------------------------------------------------ saved reports
+
+reports = APIRouter(prefix="/reports", tags=["reports"])
+
+
+@reports.post("", status_code=201)
+async def save_report(
+    parcel_id: str = Query(..., min_length=3, max_length=100),
+    crop: str = Query(...),
+    analysis_date: date | None = Query(None, alias="date"),
+):
+    """Recomputes the analysis server-side (inputs are cached, so it's fast) and stores the snapshot."""
+    import json
+    import secrets
+
+    from fastapi.encoders import jsonable_encoder
+    from sqlmodel import Session
+
+    from ..db import engine
+    from ..models import SavedReport
+
+    result = await analyse(parcel_id=parcel_id, crop=crop, analysis_date=analysis_date)
+    rid = secrets.token_urlsafe(6)
+    with Session(engine) as s:
+        s.add(SavedReport(id=rid, parcel_id=result["parcel"]["id"], crop=crop, analysis_date=result["analysis_date"],
+                          payload=json.dumps(jsonable_encoder(result), ensure_ascii=False)))
+        s.commit()
+    return {"id": rid}
+
+
+@reports.get("/{rid}")
+def get_report(rid: str):
+    import json
+
+    from sqlmodel import Session
+
+    from ..db import engine
+    from ..models import SavedReport
+
+    with Session(engine) as s:
+        r = s.get(SavedReport, rid)
+        if not r:
+            raise HTTPException(404, "Nie znaleziono raportu.")
+        return {"id": r.id, "created_at": r.created_at, "analysis": json.loads(r.payload)}

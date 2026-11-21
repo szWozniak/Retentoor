@@ -372,7 +372,7 @@ def advise(
              "wstrzymaj się": "Wstrzymaj się z nawadnianiem – w prognozie opady"}[decision],
             "Nawadniaj wieczorem lub rano, dawkami 20–30 mm, i dopiero po wykorzystaniu działań retencyjnych. Sprawdzaj wilgotność gleby na głębokości korzeni (np. próba palcowa, tensjometr)."
             if decision == "zasadne" else "Obserwuj uprawę i prognozę. Zapas wody w glebie wystarcza lub nadchodzą opady.",
-            why, "wysoki" if decision == "zasadne" else "niski", ["FAO-56 (bilans wodny strefy korzeniowej)", "Open-Meteo"],
+            why, "wysoki" if decision == "zasadne" else "niski", ["FAO-56 (bilans wodny strefy korzeniowej)"] + (["prognoza Open-Meteo"] if rain_soon is not None else []),
             permit="Pobór wody do nawadniania powyżej limitu zwykłego korzystania z wód może wymagać pozwolenia wodnoprawnego – sprawdź w Wodach Polskich." if decision == "zasadne" else None,
         ))
     elif balance and not balance.get("in_field"):

@@ -70,7 +70,7 @@ function RecItem({ r, onLocate }: { r: Recommendation; onLocate?: (lat: number, 
       <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         <span>Podstawa: {r.basis.join(' · ')}</span>
         {r.location && onLocate && (
-          <button className="text-primary flex items-center gap-1 underline underline-offset-2" onClick={() => onLocate(r.location!.lat, r.location!.lon)}>
+          <button className="no-print text-primary flex items-center gap-1 underline underline-offset-2" onClick={() => onLocate(r.location!.lat, r.location!.lon)}>
             <MapPin className="size-3" /> pokaż na mapie
           </button>
         )}

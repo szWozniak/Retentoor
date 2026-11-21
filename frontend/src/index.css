@@ -270,3 +270,51 @@
 .parcel-boundaries {
   filter: grayscale(1) brightness(3) drop-shadow(0 0 1px rgb(0 0 0 / 0.7));
 }
+
+/* ---------- print / PDF report ---------- */
+.print-only {
+  display: none;
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  html,
+  body {
+    background: #fff !important;
+    font-size: 11px;
+  }
+  .no-print,
+  [data-sonner-toaster],
+  .leaflet-control-container .leaflet-control-zoom {
+    display: none !important;
+  }
+  .print-only {
+    display: inline !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .print-map {
+    height: 280px !important;
+    min-height: 0 !important;
+    margin-bottom: 8px;
+  }
+  /* keep small blocks (KPI tiles, causes, recommendations) on one page */
+  .rounded-lg.border,
+  .rounded-xl.border:not([data-slot='card']) {
+    break-inside: avoid;
+  }
+  [data-slot='card'] {
+    box-shadow: none !important;
+  }
+  [data-slot='card-header'] {
+    break-after: avoid;
+  }
+}

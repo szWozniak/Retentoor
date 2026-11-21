@@ -175,6 +175,9 @@ export const api = {
   parcelById: (id: string) => request<Parcel>(`/parcels/by-id?id=${encodeURIComponent(id.trim())}`),
   parcelAt: (lat: number, lon: number) => request<Parcel>(`/parcels/at?lat=${lat}&lon=${lon}`),
   crops: () => request<Crop[]>('/analysis/crops'),
+  saveReport: (parcelId: string, crop: string, date: string) =>
+    request<{ id: string }>(`/reports?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`, { method: 'POST' }),
+  getReport: (id: string) => request<{ id: string; created_at: string; analysis: Analysis }>(`/reports/${encodeURIComponent(id)}`),
   analyse: (parcelId: string, crop: string, date: string) =>
     request<Analysis>(`/analysis?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`),
   listRecords: (q = '') => request<Record[]>(`/records${q ? `?q=${encodeURIComponent(q)}` : ''}`),

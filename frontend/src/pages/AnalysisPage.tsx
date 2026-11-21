@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { ParcelMap } from '@/components/map/ParcelMap'
 import { LandUseNotice } from '@/components/map/LandUseNotice'
 import { AnalysisResult } from '@/components/analysis/AnalysisResult'
+import { ReportHeader } from '@/components/analysis/ReportHeader'
 import { KpiSkeleton, ChartSkeleton } from '@/components/skeletons'
 import { formatNumber } from '@/lib/format'
 
@@ -96,8 +97,8 @@ export default function AnalysisPage() {
 
   return (
     <div className="grid gap-6">
-      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        <div className="grid content-start gap-4">
+      <div className="grid gap-6 lg:grid-cols-[360px_1fr] print:block">
+        <div className="no-print grid content-start gap-4">
           <Card>
             <CardHeader>
               <CardTitle>1. Wskaż działkę</CardTitle>
@@ -181,7 +182,7 @@ export default function AnalysisPage() {
           focus={focus}
           busy={busy}
           onPick={(lat, lon) => loadParcel(() => api.parcelAt(lat, lon))}
-          className="h-[55vh] min-h-[400px]"
+          className="print-map h-[55vh] min-h-[400px]"
         />
       </div>
 
@@ -197,6 +198,7 @@ export default function AnalysisPage() {
           </Card>
         </div>
       )}
+      {analysis && <ReportHeader a={analysis} />}
       {analysis && (
         <AnalysisResult
           a={analysis}

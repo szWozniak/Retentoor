@@ -31,6 +31,17 @@ class ApiCache(SQLModel, table=True):
     fetched_at: datetime = Field(default_factory=_now)
 
 
+class SavedReport(SQLModel, table=True):
+    """Snapshot of a generated analysis report (requirement: report can be saved in the system)."""
+
+    id: str = Field(primary_key=True)  # short random id used in the link
+    parcel_id: str = Field(index=True)
+    crop: str
+    analysis_date: str
+    payload: str  # full analysis JSON as returned by /api/analysis
+    created_at: datetime = Field(default_factory=_now)
+
+
 class RecordCreate(RecordBase):
     pass
 

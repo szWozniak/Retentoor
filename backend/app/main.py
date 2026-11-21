@@ -30,6 +30,7 @@ app.include_router(records.router, prefix="/api")
 app.include_router(files.router, prefix="/api")
 app.include_router(parcels.router, prefix="/api")
 app.include_router(analysis.router, prefix="/api")
+app.include_router(analysis.reports, prefix="/api")
 
 
 STARTED_AT = time.time()

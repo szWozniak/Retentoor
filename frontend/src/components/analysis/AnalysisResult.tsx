@@ -173,7 +173,7 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
         <Card>
           <CardHeader>
             <CardTitle>Historia suszy na tej działce (10 lat)</CardTitle>
-            <CardDescription>Każda kratka to jeden 60-dniowy okres IUNG. Najedź, by zobaczyć wartości.</CardDescription>
+            <CardDescription>Każda kratka to jeden 60-dniowy okres IUNG.<span className="no-print"> Najedź, by zobaczyć wartości.</span></CardDescription>
           </CardHeader>
           <CardContent>
             <HistoryGrid a={a} />

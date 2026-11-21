@@ -7,7 +7,7 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, HTTPException, Query
 
-from ..services import advisor, ditches, forecast, iung, kbw, meteo, soilgrids, surroundings, terrain, uldk
+from ..services import advisor, ditches, forecast, iung, kbw, meteo, sentinel, soilgrids, surroundings, terrain, uldk
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -15,6 +15,41 @@ router = APIRouter(prefix="/analysis", tags=["analysis"])
 @router.get("/crops")
 def list_crops():
     return kbw.crops()
+
+
+@router.get("/satellite")
+async def satellite(
+    parcel_id: str = Query(..., min_length=3, max_length=100),
+    crop: str = Query(...),
+    analysis_date: date | None = Query(None, alias="date"),
+):
+    """Sentinel-2 confirmation of the water assessment (NDVI / NDMI vs the same time of year in earlier years).
+    Separate from /analysis because cold reads of the imagery take 10–25 s; the report shows it when it arrives."""
+    t0 = time.perf_counter()
+    d = analysis_date or date.today()
+    if crop not in kbw.table()["crops"]:
+        raise HTTPException(422, "Nieznana uprawa.")
+    try:
+        parcel = await uldk.by_id(parcel_id)
+    except uldk.ParcelNotFound:
+        raise HTTPException(404, "Nie znaleziono działki.")
+    except uldk.UldkError as e:
+        raise HTTPException(503, str(e))
+    kc = advisor.CROP_PARAMS.get(crop, {}).get("kc", {})
+    try:
+        r = await asyncio.wait_for(sentinel.analyse(parcel.geometry, d, kc, kbw.table()["crops"][crop]["name"]), 50)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(503, "Zdjęcia satelitarne Sentinel-2 są chwilowo niedostępne (Earth Search / AWS nie odpowiada). Spróbuj ponownie później.") from e
+    return asdict(r) | {
+        "source": {"name": "Copernicus Sentinel-2 L2A (ESA) przez Earth Search (Element 84, AWS Open Data)", "url": sentinel.STAC_URL,
+                   "license": "dane Copernicus – wolny i otwarty dostęp (Copernicus Sentinel data Legal Notice)", "fetched_at": r.fetched_at},
+        "limitations": [
+            "Rozdzielczość Sentinel-2 to 10–20 m: wynik to mediana pikseli wewnątrz działki, bez pasów brzegowych mniejszych niż piksel.",
+            "Chmury, cienie i śnieg są maskowane klasyfikacją sceny (SCL). Zdjęcie bierzemy tylko wtedy, gdy co najmniej 80% działki jest bez chmur.",
+            *r.notes,
+        ],
+        "elapsed_s": round(time.perf_counter() - t0, 2),
+    }
 
 
 @router.get("")

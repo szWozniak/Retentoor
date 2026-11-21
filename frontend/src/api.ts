@@ -117,6 +117,32 @@ export type Analysis = {
   elapsed_s: number
 }
 
+export type SceneStats = {
+  scene: string
+  date: string
+  cloud_cover: number
+  clear_share: number
+  ndvi: number | null
+  ndmi: number | null
+  n_px: number
+}
+
+/** Sentinel-2 confirmation of the water assessment (separate request – cold imagery reads take 10–25 s). */
+export type Satellite = {
+  current: SceneStats | null
+  baseline: SceneStats[]
+  ndvi_median: number | null
+  ndmi_median: number | null
+  ndmi_delta: number | null
+  stage: 'pełny łan' | 'wschody/dojrzewanie' | 'poza sezonem'
+  assessment: string
+  level: 'niższa' | 'nieco niższa' | 'typowa' | 'wyższa' | 'niepewne' | 'brak danych' | 'nie dotyczy'
+  n_reference: number
+  source: Source
+  limitations: string[]
+  elapsed_s: number
+}
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -150,4 +176,6 @@ export const api = {
   geocode: (q: string, full = false) => request<Place[]>(`/geocode?q=${encodeURIComponent(q)}${full ? '&full=true' : ''}`),
   analyse: (parcelId: string, crop: string, date: string) =>
     request<Analysis>(`/analysis?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`),
+  satellite: (parcelId: string, crop: string, date: string) =>
+    request<Satellite>(`/analysis/satellite?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`),
 }

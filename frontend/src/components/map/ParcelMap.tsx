@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Circle, CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, WMSTileLayer, useMap, useMapEvents } from 'react-leaflet'
+import { Circle, CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import { LocateFixed, Loader2 } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -21,24 +21,49 @@ const KIEG_NATIVE_ZOOM = 17
 const PARCELS_MIN_ZOOM = 15
 const POLAND_CENTER: L.LatLngTuple = [52.1, 19.4]
 
-export const LANDUSE_COLORS: Record<LandUse['class'], string> = {
-  rolna: '#22c55e',
-  mieszana: '#f59e0b',
-  nierolna: '#ef4444',
-  nieznana: '#facc15',
+/** Same roles as the UI (light-theme M3 values): dark stroke = colour role, light fill = its container. */
+export const LANDUSE_STYLE: Record<LandUse['class'], { stroke: string; fill: string }> = {
+  rolna: { stroke: '#2b6a46', fill: '#aff1c3' }, // primary / primary-container
+  mieszana: { stroke: '#7d5800', fill: '#ffdea9' }, // warning
+  nierolna: { stroke: '#ba1a1a', fill: '#ffdad6' }, // error
+  nieznana: { stroke: '#2b6a46', fill: '#ffffff' }, // land use still loading / unknown
+}
+const MARKER = '#2b6a46'
+
+/**
+ * Loading priority on a slow connection: parcel grid (high) → orthophoto (normal) → ditches (low, added only after
+ * the orthophoto has loaded). `fetchPriority` on the tile <img> tells the browser which requests go first.
+ */
+function withPriority<T extends typeof L.TileLayer.WMS>(Base: T, priority: 'high' | 'low'): T {
+  return Base.extend({
+    createTile(this: L.TileLayer, coords: L.Coords, done: L.DoneCallback) {
+      const self = this as unknown as { _tileOnLoad: () => void; _tileOnError: () => void }
+      const tile = document.createElement('img') as HTMLImageElement & { fetchPriority?: string }
+      L.DomEvent.on(tile, 'load', L.Util.bind(self._tileOnLoad, this, done, tile))
+      L.DomEvent.on(tile, 'error', L.Util.bind(self._tileOnError, this, done, tile))
+      tile.alt = ''
+      tile.setAttribute('role', 'presentation')
+      tile.fetchPriority = priority
+      tile.decoding = 'async'
+      tile.src = this.getTileUrl(coords)
+      return tile
+    },
+  }) as unknown as T
 }
 
 /**
  * WMS layer that asks for higher-resolution images below KIEG_NATIVE_ZOOM, so the server still draws
  * boundaries at zoom 15-16 (e.g. a 1024px image squeezed into a 256px tile at zoom 15).
  */
-const HiResWMS = L.TileLayer.WMS.extend({
+const HiResWMSBase = L.TileLayer.WMS.extend({
   getTileUrl(this: L.TileLayer.WMS & { wmsParams: L.WMSParams }, coords: L.Coords) {
     const factor = Math.min(4, Math.max(1, 2 ** (KIEG_NATIVE_ZOOM - coords.z)))
     this.wmsParams.width = this.wmsParams.height = 256 * factor
     return L.TileLayer.WMS.prototype.getTileUrl.call(this, coords)
   },
 }) as unknown as typeof L.TileLayer.WMS
+const HiResWMS = withPriority(HiResWMSBase, 'high')
+const LowWMS = withPriority(L.TileLayer.WMS, 'low')
 
 function ParcelBoundaries() {
   const map = useMap()
@@ -53,9 +78,39 @@ function ParcelBoundaries() {
       opacity: 0.85,
       zIndex: 3, // above the ditches
       className: 'parcel-boundaries', // recoloured in index.css (server draws them blue)
-      keepBuffer: 4,
+      keepBuffer: 1,
       updateWhenZooming: false,
+      updateWhenIdle: true,
       attribution: 'Działki &copy; GUGiK (KIEG)',
+    } as L.WMSOptions)
+    layer.addTo(map)
+    return () => {
+      layer.remove()
+    }
+  }, [map])
+  return null
+}
+
+/** Drainage ditches (BDOT10k, GUGiK) – last priority: mounted after the orthophoto has loaded once. */
+function Ditches() {
+  const map = useMap()
+  useEffect(() => {
+    const layer = new LowWMS('https://mapy.geoportal.gov.pl/wss/service/pub/guest/kompozycja_BDOT10k_WMS/MapServer/WMSServer', {
+      layers: 'row',
+      format: 'image/png',
+      transparent: true,
+      version: '1.3.0',
+      // this server does not support EPSG:3857 (requests hang) – ask in EPSG:4326; distortion is negligible at zoom 15+
+      crs: L.CRS.EPSG4326,
+      tileSize: 512,
+      minZoom: 15,
+      maxZoom: 20,
+      zIndex: 2,
+      keepBuffer: 0,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      className: 'ditch-lines',
+      attribution: 'Rowy &copy; GUGiK (BDOT10k)',
     } as L.WMSOptions)
     layer.addTo(map)
     return () => {
@@ -77,6 +132,8 @@ type Props = {
   /** when set (new object each time), the map flies to this point */
   focus?: { lat: number; lon: number; t: number; zoom?: number } | null
   onPick: (lat: number, lon: number) => void
+  /** the point just clicked – shown immediately while the parcel is being looked up */
+  pending?: { lat: number; lon: number } | null
   busy?: boolean
   className?: string
 }
@@ -107,9 +164,10 @@ function FitToParcel({ parcel }: { parcel: Parcel | null }) {
   return null
 }
 
-export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating, onPick, busy, className }: Props) {
+export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating, onPick, pending, busy, className }: Props) {
   const [zoom, setZoom] = useState(6)
-  const color = parcel ? LANDUSE_COLORS[parcel.landuse?.class ?? 'nieznana'] : LANDUSE_COLORS.nieznana
+  const [orthoReady, setOrthoReady] = useState(false)
+  const st = LANDUSE_STYLE[parcel?.landuse?.class ?? 'nieznana']
 
   return (
     <div className={`relative overflow-hidden rounded-xl border ${className ?? ''}`}>
@@ -121,39 +179,36 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
         zoomSnap={0.5}
         wheelPxPerZoomLevel={90}
         className="h-full w-full"
-        style={{ cursor: busy ? 'progress' : 'crosshair' }}
+        style={{ cursor: busy ? 'progress' : 'pointer' }}
       >
+        <ParcelBoundaries />
         <TileLayer
           url={ORTHO_WMTS}
           maxNativeZoom={19}
           maxZoom={20}
-          keepBuffer={4}
+          zIndex={1}
+          keepBuffer={2}
+          eventHandlers={{ load: () => setOrthoReady(true) }}
           attribution='Ortofotomapa &copy; <a href="https://www.geoportal.gov.pl">GUGiK</a>'
         />
-        <ParcelBoundaries />
-        {/* drainage ditches (BDOT10k, GUGiK) – where a weir could hold water back */}
-        <WMSTileLayer
-          url="https://mapy.geoportal.gov.pl/wss/service/pub/guest/kompozycja_BDOT10k_WMS/MapServer/WMSServer"
-          params={{ layers: 'row', format: 'image/png', transparent: true, version: '1.3.0' } as L.WMSParams}
-          // this server does not support EPSG:3857 (requests hang) – ask in EPSG:4326; distortion is negligible at zoom 14+
-          crs={L.CRS.EPSG4326}
-          tileSize={512}
-          minZoom={15}
-          maxZoom={20}
-          opacity={1}
-          zIndex={2}
-          className="ditch-lines"
-          attribution="Rowy &copy; GUGiK (BDOT10k)"
-        />
+        {orthoReady && <Ditches />}
         {parcel && (
-          <GeoJSON
-            key={`${parcel.id}-${color}`}
-            data={parcel.geometry}
-            style={{ color, weight: 3, fillColor: color, fillOpacity: 0.2 }}
-          />
+          <>
+            {/* white halo keeps the outline readable on any orthophoto */}
+            <GeoJSON key={`${parcel.id}-halo`} data={parcel.geometry} interactive={false} style={{ color: '#fff', weight: 7, opacity: 0.85, fill: false }} />
+            <GeoJSON
+              key={`${parcel.id}-${parcel.landuse?.class ?? 'loading'}`}
+              data={parcel.geometry}
+              interactive={false}
+              style={{ color: st.stroke, weight: 3.5, fillColor: st.fill, fillOpacity: 0.35 }}
+            />
+          </>
+        )}
+        {pending && (
+          <CircleMarker center={[pending.lat, pending.lon]} radius={7} interactive={false} pathOptions={{ color: '#fff', weight: 3, fillColor: MARKER, fillOpacity: 1 }} />
         )}
         {markers?.map((m) => (
-          <CircleMarker key={`${m.lat},${m.lon}`} center={[m.lat, m.lon]} radius={8} pathOptions={{ color: '#fff', weight: 2, fillColor: '#2563eb', fillOpacity: 0.95 }}>
+          <CircleMarker key={`${m.lat},${m.lon}`} center={[m.lat, m.lon]} radius={8} pathOptions={{ color: '#fff', weight: 3, fillColor: MARKER, fillOpacity: 1 }}>
             <Tooltip direction="top" offset={[0, -8]} permanent>{m.label}</Tooltip>
           </CircleMarker>
         ))}
@@ -195,7 +250,7 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
       <div className="pointer-events-none absolute bottom-8 left-3 z-[1000] flex flex-wrap gap-x-3 gap-y-1 rounded-md bg-background/90 px-2 py-1 text-xs text-foreground">
         {(['rolna', 'mieszana', 'nierolna'] as const).map((c) => (
           <span key={c} className="flex items-center gap-1">
-            <span className="size-2.5 rounded-sm" style={{ background: LANDUSE_COLORS[c] }} /> {c}
+            <span className="size-3 rounded-sm border-2" style={{ background: LANDUSE_STYLE[c].fill, borderColor: LANDUSE_STYLE[c].stroke }} /> {c}
           </span>
         ))}
       </div>

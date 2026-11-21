@@ -60,7 +60,7 @@ function SelectContent({
   sideOffset = 4,
   align = "center",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  alignItemWithTrigger = false, // plain dropdown that flips to stay in the viewport
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<

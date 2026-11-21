@@ -48,7 +48,7 @@ export default function Layout() {
         Przejdź do treści
       </a>
       <header className="no-print bg-background border-b">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+        <div className="mx-auto flex max-w-page flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
           <Link to="/" className="flex items-center gap-2.5" aria-label="Zatrzymaj Wodę – strona główna">
             <span className="bg-primary text-primary-foreground grid size-9 place-items-center rounded-md">
               <Droplets className="size-5" aria-hidden />
@@ -92,12 +92,12 @@ export default function Layout() {
         </div>
       </header>
 
-      <main id="main" className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 content-start gap-6 px-4 py-6">
+      <main id="main" className="mx-auto grid w-full max-w-page flex-1 grid-cols-1 content-start gap-6 px-4 py-6">
         <Outlet />
       </main>
 
       <footer className="no-print text-muted-foreground border-t text-xs">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mx-auto flex max-w-page flex-col gap-2 px-4 py-5 sm:flex-row sm:items-start sm:justify-between">
           <p className="max-w-2xl">
             Prototyp przygotowany na HackNation 2026 (zadanie KOWR „Zatrzymaj wodę, chroń plony”). Rekomendacje mają charakter
             informacyjny i nie zastępują porady doradcy rolnego ani decyzji administracyjnych.

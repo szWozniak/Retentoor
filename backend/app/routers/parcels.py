@@ -21,7 +21,7 @@ async def _landuse(p: uldk.Parcel) -> dict:
     return iung.classify_landuse(soil) | {"source": "IUNG-PIB, mapa kategorii glebowych i użytkowania 2024"}
 
 
-async def _run(coro):
+async def _run(coro, with_landuse: bool = True):
     try:
         p = await coro
     except uldk.ParcelNotFound:
@@ -30,17 +30,30 @@ async def _run(coro):
         raise HTTPException(503, str(e))
     d = asdict(p)
     d["source"] = "ULDK GUGiK (uldk.gugik.gov.pl)"
-    d["landuse"] = await _landuse(p)
+    # the map highlights the parcel as soon as ULDK answers; land use (IUNG, slower) can be fetched separately
+    d["landuse"] = await _landuse(p) if with_landuse else None
     return d
 
 
 @router.get("/by-id")
-async def parcel_by_id(id: str = Query(..., min_length=3, max_length=100, description="np. 260104_5.0016.78")):
-    return await _run(uldk.by_id(id))
+async def parcel_by_id(id: str = Query(..., min_length=3, max_length=100, description="np. 260104_5.0016.78"), landuse: bool = True):
+    return await _run(uldk.by_id(id), landuse)
 
 
 @router.get("/at")
-async def parcel_at(lat: float = Query(...), lon: float = Query(...)):
+async def parcel_at(lat: float = Query(...), lon: float = Query(...), landuse: bool = True):
     if not (PL_LAT[0] <= lat <= PL_LAT[1] and PL_LON[0] <= lon <= PL_LON[1]):
         raise HTTPException(422, "Punkt poza Polską.")
-    return await _run(uldk.by_point(lat, lon))
+    return await _run(uldk.by_point(lat, lon), landuse)
+
+
+@router.get("/landuse")
+async def parcel_landuse(id: str = Query(..., min_length=3, max_length=100)):
+    """Land-use class of a parcel (second step after the fast geometry lookup)."""
+    try:
+        p = await uldk.by_id(id)
+    except uldk.ParcelNotFound:
+        raise HTTPException(404, "Nie znaleziono działki.")
+    except uldk.UldkError as e:
+        raise HTTPException(503, str(e))
+    return await _landuse(p)

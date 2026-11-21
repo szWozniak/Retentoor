@@ -40,7 +40,8 @@ export type Parcel = {
   fetched_at: string
   from_cache: boolean
   source: string
-  landuse: LandUse
+  /** null until the second (slower) land-use request has finished */
+  landuse: LandUse | null
 }
 
 export type LandUse = {
@@ -174,8 +175,9 @@ const json = (method: string, body: unknown): RequestInit => ({
 
 export const api = {
   health: () => request<Health>('/health'),
-  parcelById: (id: string) => request<Parcel>(`/parcels/by-id?id=${encodeURIComponent(id.trim())}`),
-  parcelAt: (lat: number, lon: number) => request<Parcel>(`/parcels/at?lat=${lat}&lon=${lon}`),
+  parcelById: (id: string) => request<Parcel>(`/parcels/by-id?id=${encodeURIComponent(id.trim())}&landuse=false`),
+  parcelAt: (lat: number, lon: number) => request<Parcel>(`/parcels/at?lat=${lat}&lon=${lon}&landuse=false`),
+  landuse: (id: string) => request<LandUse>(`/parcels/landuse?id=${encodeURIComponent(id)}`),
   crops: () => request<Crop[]>('/analysis/crops'),
   geocode: (q: string, full = false) => request<Place[]>(`/geocode?q=${encodeURIComponent(q)}${full ? '&full=true' : ''}`),
   saveReport: (parcelId: string, crop: string, date: string) =>

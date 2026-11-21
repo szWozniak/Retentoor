@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Check, Loader2, LocateFixed, MapPin, Star } from 'lucide-react'
+import { Check, Loader2, LocateFixed, Star } from 'lucide-react'
 import { api, type Analysis, type Crop, type Parcel } from '@/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DatePicker } from '@/components/DatePicker'
 import { ParcelMap } from '@/components/map/ParcelMap'
@@ -82,6 +83,8 @@ export default function AnalysisPage() {
   const { fields, save, remove, isSaved, setCrop: rememberCrop } = useSavedFields()
   const [userPos, setUserPos] = useState<{ lat: number; lon: number; accuracy: number } | null>(null)
   const [locating, setLocating] = useState(false)
+  /** where the farmer just clicked – drawn at once, before ULDK answers */
+  const [pending, setPending] = useState<{ lat: number; lon: number } | null>(null)
 
   /** Farmers often check a field while standing on it: show where they are and offer the parcel under them. */
   const locate = () => {
@@ -125,11 +128,22 @@ export default function AnalysisPage() {
       setQuery(p.id)
       setAnalysis(null)
       syncUrl({ dzialka: p.id })
+      // land use (IUNG) is slower: highlight the parcel first, colour it when this arrives
+      if (!p.landuse)
+        api
+          .landuse(p.id)
+          .then((lu) => setParcel((cur) => (cur?.id === p.id ? { ...cur, landuse: lu } : cur)))
+          .catch(() =>
+            setParcel((cur) =>
+              cur?.id === p.id ? { ...cur, landuse: { class: 'nieznana', agricultural_share: null, label: 'Brak danych o użytkowaniu terenu', parts: [] } } : cur,
+            ),
+          )
       return p
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Nie udało się pobrać działki')
     } finally {
       setBusy(false)
+      setPending(null)
     }
   }
 
@@ -173,7 +187,7 @@ export default function AnalysisPage() {
       )}
 
       {/* mobile order: parcel → map → crop; desktop: controls left, map right */}
-      <div className="grid gap-4 lg:grid-cols-[380px_1fr] lg:grid-rows-[auto_1fr] lg:gap-6 print:block">
+      <div className="grid gap-4 lg:grid-cols-[400px_1fr] lg:grid-rows-[auto_1fr] lg:gap-6 print:block">
         <Card className="no-print lg:col-start-1 lg:row-start-1">
           <CardHeader>
             <StepTitle n={1} done={!!parcel}>
@@ -239,16 +253,26 @@ export default function AnalysisPage() {
             )}
 
             {parcel && (
-              <div className="animate-fade-up rounded-lg border p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="flex items-center gap-1.5 text-base font-semibold">
-                    <MapPin className="text-primary size-4 shrink-0" aria-hidden /> Działka {parcel.number}, obręb {parcel.region}
-                  </p>
+              <>
+                <Separator className="my-1" />
+                <div className="animate-fade-up grid gap-3">
+                  <div>
+                    <p className="type-title-sm">
+                      Działka {parcel.number}, obręb {parcel.region}
+                    </p>
+                    <p className="text-muted-foreground font-mono text-xs break-all">{parcel.id}</p>
+                  </div>
+                  <div>
+                    <Row label="Powierzchnia" value={`${formatNumber(Math.round(parcel.area_ha * 100) / 100)} ha`} />
+                    <Row label="Gmina" value={parcel.commune} />
+                    <Row label="Powiat" value={parcel.county.replace(/^powiat\s+/i, '')} />
+                    <Row label="Województwo" value={parcel.voivodeship} />
+                  </div>
+                  <LandUseNotice landuse={parcel.landuse} />
                   <Button
                     type="button"
                     variant={isSaved(parcel.id) ? 'secondary' : 'outline'}
-                    size="sm"
-                    className="shrink-0"
+                    className="w-full"
                     onClick={() => {
                       if (isSaved(parcel.id)) {
                         remove(parcel.id)
@@ -261,19 +285,10 @@ export default function AnalysisPage() {
                     aria-pressed={isSaved(parcel.id)}
                   >
                     <Star className={isSaved(parcel.id) ? 'text-primary fill-current' : ''} />
-                    {isSaved(parcel.id) ? 'Zapisane' : 'Zapisz pole'}
+                    {isSaved(parcel.id) ? 'Zapisane w Moich polach' : 'Zapisz w Moich polach'}
                   </Button>
                 </div>
-                <p className="text-muted-foreground mb-1 font-mono text-xs break-all">{parcel.id}</p>
-                <Row label="Powierzchnia" value={`${formatNumber(Math.round(parcel.area_ha * 100) / 100)} ha`} />
-                <Row label="Gmina" value={`${parcel.commune} (${parcel.county})`} />
-                <Row label="Województwo" value={parcel.voivodeship} />
-                {parcel.landuse && (
-                  <div className="mt-2">
-                    <LandUseNotice landuse={parcel.landuse} />
-                  </div>
-                )}
-              </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -286,7 +301,11 @@ export default function AnalysisPage() {
           onLocate={locate}
           locating={locating}
           busy={busy}
-          onPick={(lat, lon) => loadParcel(() => api.parcelAt(lat, lon))}
+          pending={pending}
+          onPick={(lat, lon) => {
+            setPending({ lat, lon })
+            loadParcel(() => api.parcelAt(lat, lon))
+          }}
           className="print-map h-[48vh] min-h-[340px] lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-auto lg:min-h-[560px]"
         />
 

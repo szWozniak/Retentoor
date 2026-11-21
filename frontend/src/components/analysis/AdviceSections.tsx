@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 const CAUSE_STYLE: Record<Cause['status'], { icon: typeof CheckCircle2; badge: 'error' | 'warning' | 'secondary' | 'outline'; label: string; order: number }> = {
   tak: { icon: AlertTriangle, badge: 'error', label: 'Główna przyczyna', order: 0 },
   częściowo: { icon: CircleMinus, badge: 'warning', label: 'Częściowa przyczyna', order: 1 },
-  nie: { icon: CheckCircle2, badge: 'secondary', label: 'Nie jest przyczyną', order: 2 },
+  nie: { icon: CheckCircle2, badge: 'secondary', label: 'Nie stwierdzono', order: 2 },
   'brak danych': { icon: CircleHelp, badge: 'outline', label: 'Brak danych', order: 3 },
 }
 

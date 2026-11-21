@@ -72,8 +72,12 @@ async def analyse(
     if isinstance(met, BaseException):
         raise HTTPException(503, f"Brak danych meteorologicznych (Open-Meteo i NASA POWER niedostępne): {met}")
     limitations = met.limitations + limitations
-    if mode == "prognoza" and met.forecast_from is None:
-        raise HTTPException(503, "Prognoza pogody jest chwilowo niedostępna, więc nie da się ocenić przyszłej daty. Wybierz dzisiejszą lub wcześniejszą datę.")
+    if mode == "prognoza":
+        if met.forecast_from is None:
+            raise HTTPException(503, "Prognoza pogody jest chwilowo niedostępna (Open-Meteo i MET Norway nie odpowiadają), więc nie da się ocenić przyszłej daty. Wybierz dzisiejszą lub wcześniejszą datę.")
+        last = met.df.index.max().date()
+        if last < d:
+            raise HTTPException(503, f"Dostępna teraz prognoza pogody ({met.forecast.source['name'].split(' (')[0]}) sięga tylko do {last.strftime('%d.%m.%Y')}. Wybierz tę lub wcześniejszą datę.")
     fc = meteo.rain_ahead(met.forecast, d) if mode != "wsteczna" else None
     if isinstance(sg, BaseException) or sg is None:
         missing.append("Skład gleby i węgiel organiczny (SoilGrids) – usługa nie odpowiedziała" if isinstance(sg, BaseException) else "Skład gleby (SoilGrids) – brak danych dla tego miejsca")

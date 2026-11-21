@@ -88,7 +88,7 @@ export default function Layout() {
             informacyjny i nie zastępują porady doradcy rolnego ani decyzji administracyjnych.
           </p>
           <p className="sm:text-right">
-            Dane: GUGiK (ULDK, NMT, ortofotomapa), IUNG-PIB, Open-Meteo / NASA POWER, ISRIC SoilGrids.
+            Dane: GUGiK (ULDK, NMT, ortofotomapa), IUNG-PIB, Open-Meteo / NASA POWER / MET Norway, ISRIC SoilGrids.
             <br />
             Metodyka: IUNG-PIB SMSR, FAO-56.
           </p>

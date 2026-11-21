@@ -124,11 +124,12 @@ async def daily_history(lat: float, lon: float, analysis_date: date, years: int 
                 past = recent[recent.index <= pd.Timestamp(fr.issued)]
                 future = recent[recent.index > pd.Timestamp(fr.issued)]
                 if len(past):
-                    sources.append({"name": "Open-Meteo Forecast API (ostatnie dni)", "url": FORECAST_URL, "fetched_at": fr.source["fetched_at"],
-                                    "range": f"{past.index.min().date()} – {past.index.max().date()}", "license": "CC BY 4.0"})
+                    sources.append({**fr.source, "name": f"{fr.source['name']} – ostatnie dni",
+                                    "range": f"{past.index.min().date()} – {past.index.max().date()}"})
                 if len(future):
                     forecast_from = future.index.min().date()
                     sources.append({**fr.source, "range": f"{forecast_from} – {future.index.max().date()}"})
+                    limitations.extend(fr.notes)
         last = df.index.max().date() if len(df) else start
         if last < analysis_date:
             limitations.append(f"Dane pogodowe dostępne do {last.isoformat()} – ostatnie {(analysis_date - last).days} dni przed datą analizy nie są uwzględnione.")

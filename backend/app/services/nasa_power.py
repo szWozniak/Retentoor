@@ -22,6 +22,16 @@ def _es(t):
     return 0.6108 * np.exp(17.27 * t / (t + 237.3))
 
 
+def extraterrestrial_radiation(index: pd.DatetimeIndex, lat: float) -> np.ndarray:
+    """Ra [MJ m-2 day-1], FAO-56 eq. 21."""
+    j = index.dayofyear.values
+    phi = math.radians(lat)
+    dr = 1 + 0.033 * np.cos(2 * np.pi * j / 365)
+    dec = 0.409 * np.sin(2 * np.pi * j / 365 - 1.39)
+    ws = np.arccos(np.clip(-np.tan(phi) * np.tan(dec), -1, 1))
+    return 24 * 60 / np.pi * 0.0820 * dr * (ws * np.sin(phi) * np.sin(dec) + np.cos(phi) * np.cos(dec) * np.sin(ws))
+
+
 def et0_fao56(df: pd.DataFrame, lat: float, elev: float) -> pd.Series:
     """Daily FAO-56 Penman-Monteith ET0 [mm/day]. Rs in MJ m-2 day-1, u2 in m/s, RH in %."""
     tmax, tmin, tmean = df["Tmax"], df["Tmin"], df["Tmean"]
@@ -32,12 +42,7 @@ def et0_fao56(df: pd.DataFrame, lat: float, elev: float) -> pd.Series:
     pressure = 101.3 * ((293 - 0.0065 * elev) / 293) ** 5.26
     gamma = 0.000665 * pressure
 
-    j = df.index.dayofyear.values
-    phi = math.radians(lat)
-    dr = 1 + 0.033 * np.cos(2 * np.pi * j / 365)
-    dec = 0.409 * np.sin(2 * np.pi * j / 365 - 1.39)
-    ws = np.arccos(np.clip(-np.tan(phi) * np.tan(dec), -1, 1))
-    ra = 24 * 60 / np.pi * 0.0820 * dr * (ws * np.sin(phi) * np.sin(dec) + np.cos(phi) * np.cos(dec) * np.sin(ws))
+    ra = extraterrestrial_radiation(df.index, lat)
     rso = (0.75 + 2e-5 * elev) * ra
     rns = 0.77 * rs
     ratio = np.clip(rs / np.where(rso > 0, rso, np.nan), 0.25, 1.0)

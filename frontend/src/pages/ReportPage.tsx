@@ -1,12 +1,20 @@
 import { Link, useParams } from 'react-router-dom'
 import { useState } from 'react'
-import { api } from '@/api'
+import { api, type Parcel } from '@/api'
 import { useAsync } from '@/hooks/useAsync'
 import { AnalysisResult } from '@/components/analysis/AnalysisResult'
 import { ReportHeader } from '@/components/analysis/ReportHeader'
 import { ParcelMap } from '@/components/map/ParcelMap'
 import { ErrorState } from '@/components/EmptyState'
 import { ChartSkeleton, KpiSkeleton } from '@/components/skeletons'
+
+function landuseFromSoil(shares: { [code: string]: number }): Parcel['landuse'] {
+  const entries = Object.entries(shares)
+  if (!entries.length) return { class: 'nieznana', agricultural_share: null, label: 'Brak danych o użytkowaniu terenu', parts: [] }
+  const agri = entries.reduce((sum, [c, v]) => (Number(c) >= 1 && Number(c) <= 5 ? sum + v : sum), 0)
+  const cls = agri >= 0.8 ? 'rolna' : agri >= 0.2 ? 'mieszana' : 'nierolna'
+  return { class: cls, agricultural_share: agri, label: cls === 'rolna' ? 'Działka rolna' : cls === 'mieszana' ? 'Działka częściowo rolna' : 'Działka nierolna', parts: [] }
+}
 
 /** A saved report snapshot: /raport/:id (read-only, exactly as generated). */
 export default function ReportPage() {
@@ -24,11 +32,13 @@ export default function ReportPage() {
   if (error || !data) return <ErrorState message={error ?? 'Brak raportu'} onRetry={reload} />
 
   const a = data.analysis
+  // older snapshots stored the parcel without the land-use class – derive it from the soil sample shares
+  const parcel = a.parcel.landuse ? a.parcel : { ...a.parcel, landuse: landuseFromSoil(a.soil.shares) }
   return (
     <div className="report grid gap-4">
       <ReportHeader a={a} savedId={data.id} createdAt={data.created_at.endsWith('Z') ? data.created_at : `${data.created_at}Z`} />
       <ParcelMap
-        parcel={a.parcel}
+        parcel={parcel}
         markers={a.recommendations.filter((r) => r.location).map((r) => ({ ...r.location! }))}
         focus={focus}
         onPick={() => {}}

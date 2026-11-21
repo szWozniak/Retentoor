@@ -163,7 +163,7 @@ async def analyse(
     ]
 
     return {
-        "parcel": asdict(parcel),
+        "parcel": asdict(parcel) | {"landuse": iung.classify_landuse(soil)},
         "crop": {"id": crop, "name": crop_name},
         "analysis_date": d.isoformat(),
         "soil": asdict(soil) | {"category_used": category},

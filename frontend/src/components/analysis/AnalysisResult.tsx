@@ -75,7 +75,7 @@ function verdict(a: Analysis): Verdict {
     return {
       tone: close ? 'warn' : 'ok',
       title: close ? 'Blisko progu suszy' : 'Brak suszy rolniczej',
-      text: `W ostatnim zakończonym okresie (${lp.period}) bilans wodny wyniósł ${mm(lp.kbw)} przy progu suszy ${thr(lp.threshold)} – zapas ${Math.round(lp.margin ?? 0)} mm.`,
+      text: `W ostatnim zakończonym okresie (${lp.period}) bilans wodny wyniósł ${mm(lp.kbw)} przy progu suszy ${thr(lp.threshold)} – zapas ${Math.round(lp.margin ?? 0)}\u00a0mm.`,
     }
   }
 
@@ -114,7 +114,7 @@ function verdict(a: Analysis): Verdict {
   return {
     tone: 'ok',
     title: `Sezon ${year}: bez suszy rolniczej`,
-    text: `${note} Najmniejszy zapas do progu suszy: ${Math.round(tightest.margin ?? 0)} mm (okres ${tightest.period}).`,
+    text: `${note} Najmniejszy zapas do progu suszy: ${Math.round(tightest.margin ?? 0)}\u00a0mm (okres ${tightest.period}).`,
   }
 }
 

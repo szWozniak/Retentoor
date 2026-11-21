@@ -191,6 +191,7 @@ def advise(
     soilgrids: dict | None,
     terrain: dict | None,
     surroundings: dict | None,
+    ditches: dict | None = None,
     balance: dict | None,
     comparison: list[dict],
     forecast: dict | None,
@@ -256,6 +257,11 @@ def advise(
         if few_elements:
             ev.append("Mało elementów krajobrazu spowalniających odpływ wody (oczka, mokradła, zadrzewienia).")
         runoff += few_elements
+    if ditches and ditches.get("nearest_ditch_m") is not None and ditches["nearest_ditch_m"] <= 50:
+        where = "przy granicy działki" if ditches["ditch_adjacent"] else f"ok. {pl(ditches['nearest_ditch_m'], 0)} m od działki"
+        width = f", szer. ok. {pl(ditches['ditch_width_m'], 1)} m" if ditches.get("ditch_width_m") else ""
+        ev.append(f"Rów melioracyjny {where} (BDOT10k{width}) odprowadza wodę z pola – w suchym okresie przyspiesza przesychanie gleby.")
+        runoff += 1
     status = "brak danych" if not ev else "tak" if runoff >= 2 else "częściowo" if runoff == 1 else "nie"
     causes.append(Cause("runoff", "Szybki odpływ wody i mało retencji w krajobrazie", status, ev or ["Brak danych o terenie."]))
 
@@ -288,7 +294,34 @@ def advise(
             [f"Nachylenie {pl(terrain['slope_pct'], 1)}% sprzyja spływowi powierzchniowemu i erozji."],
             "wysoki" if terrain["slope_pct"] >= 8 else "średni", ["NWRM (EC 2014)", "Podstawy naukowe KOWR"],
         ))
-    if surroundings and surroundings.get("nearest_water_m") is not None and surroundings["nearest_water_m"] <= 500:
+    near_ditch = ditches and ditches.get("nearest_ditch_m") is not None and ditches["nearest_ditch_m"] <= 50
+    if near_ditch:
+        why = [
+            ("Rów melioracyjny styka się z działką." if ditches["ditch_adjacent"] else f"Rów melioracyjny ok. {pl(ditches['nearest_ditch_m'], 0)} m od działki.")
+            + (f" Szerokość ok. {pl(ditches['ditch_width_m'], 1)} m." if ditches.get("ditch_width_m") else ""),
+            "Rów już odprowadza wodę z pola – spiętrzenie go jest tańsze i szybsze niż kopanie nowego zbiornika.",
+        ]
+        if ditches.get("ditch_updated"):
+            why.append(f"Dane o rowie: BDOT10k, aktualizacja {ditches['ditch_updated']}.")
+        pt = ditches.get("nearest_ditch_point")
+        recs.append(Recommendation(
+            "ditch_weir", "retencja_krajobrazowa", "Zatrzymaj wodę w rowie przy działce",
+            "Zamiast kopać nowy zbiornik, spiętrz wodę w istniejącym rowie melioracyjnym: zastawka lub próg (sterowany odpływ). "
+            "Wiosną zatrzymuje wodę z roztopów, a latem ogranicza przesuszanie pola.",
+            why, "wysoki", ["NWRM (EC 2014)", "CDR 2025", "BDOT10k GUGiK"],
+            permit="Zastawka na rowie wymaga uzgodnienia z zarządcą rowu (spółka wodna, gmina lub Wody Polskie) i zwykle zgłoszenia wodnoprawnego.",
+            location={"lat": pt[0], "lon": pt[1], "label": "Rów melioracyjny"} if pt else None,
+        ))
+    elif ditches and ditches.get("nearest_ditch_m") is not None and ditches["nearest_ditch_m"] <= 300:
+        recs.append(Recommendation(
+            "ditch_near", "retencja_krajobrazowa", "Sprawdź rów melioracyjny w okolicy",
+            "Niedaleko jest rów melioracyjny. Zapytaj spółkę wodną lub sąsiadów o wspólną zastawkę – spiętrzenie rowu podnosi poziom wody w okolicznych polach.",
+            [f"Najbliższy rów melioracyjny: ok. {pl(ditches['nearest_ditch_m'], 0)} m od działki (BDOT10k)."],
+            "średni", ["NWRM (EC 2014)", "CDR 2025", "BDOT10k GUGiK"],
+            permit="Piętrzenie wody na rowach wymaga uzgodnienia z zarządcą rowu.",
+        ))
+    elif not ditches and surroundings and surroundings.get("nearest_water_m") is not None and surroundings["nearest_water_m"] <= 500:
+        # fallback when ditch data is unavailable
         recs.append(Recommendation(
             "ditch", "retencja_krajobrazowa", "Spowolnij odpływ w rowach i ciekach przy działce",
             "Jeśli przy działce jest rów melioracyjny, rozważ zastawkę (piętrzenie) wiosną, by zatrzymać wodę z roztopów, oraz ochronę istniejących oczek i mokradeł z pasem buforowym.",
@@ -296,6 +329,12 @@ def advise(
             "średni", ["NWRM (EC 2014)", "CDR 2025"],
             permit="Piętrzenie wody na rowach wymaga uzgodnienia z zarządcą (spółka wodna / Wody Polskie).",
         ))
+    # a ditch at the field makes the pond the second choice
+    if near_ditch:
+        for r in recs:
+            if r.id == "low_spot":
+                r.priority = "niski"
+                r.action = "Jeśli spiętrzenie rowu nie wystarczy: " + r.action[0].lower() + r.action[1:]
     if surroundings and surroundings["water_share"] + surroundings["forest_share"] + surroundings["organic_share"] < 0.1:
         recs.append(Recommendation(
             "landscape", "retencja_krajobrazowa", "Dodaj elementy zatrzymujące wodę w krajobrazie",

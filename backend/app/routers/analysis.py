@@ -7,7 +7,7 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, HTTPException, Query
 
-from ..services import advisor, iung, kbw, meteo, soilgrids, surroundings, terrain, uldk
+from ..services import advisor, ditches, iung, kbw, meteo, soilgrids, surroundings, terrain, uldk
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -50,13 +50,14 @@ async def analyse(
             return e
 
     is_today = (today - d).days <= 2
-    soil, met, sg, ter, sur, fc = await asyncio.gather(
+    soil, met, sg, ter, sur, fc, dit = await asyncio.gather(
         opt(iung.soil_for_parcel(parcel.geometry), 15),
         opt(meteo.daily_history(lat, lon, d), 45),
         opt(soilgrids.query(lat, lon), 16),
         opt(terrain.analyse(parcel.geometry), 15),
         opt(surroundings.analyse(parcel.geometry, lat, lon), 15),
         opt(meteo.forecast_7d(lat, lon), 10) if is_today else asyncio.sleep(0, result=None),
+        opt(ditches.analyse(parcel.geometry, lat, lon), 15),
     )
 
     limitations: list[str] = [
@@ -82,6 +83,9 @@ async def analyse(
         sur = None
     if isinstance(fc, BaseException):
         fc = None
+    if isinstance(dit, BaseException):
+        missing.append("Rowy melioracyjne i cieki (BDOT10k GUGiK) – brak danych")
+        dit = None
 
     category = soil.category
     if soil.code == 5:
@@ -135,6 +139,7 @@ async def analyse(
     sg_d = asdict(sg) if sg else None
     ter_d = asdict(ter) if ter else None
     sur_d = asdict(sur) if sur else None
+    dit_d = asdict(dit) if dit else None
     awc_per_m = sg.awc_mm_100 if sg else advisor.AWC_BY_CATEGORY.get(category or "", 120)
     balance = advisor.root_zone_balance(df, crop, d, awc_per_m)
     comparison = advisor.crop_comparison(df, category, d)
@@ -142,7 +147,7 @@ async def analyse(
     advice = advisor.advise(
         crop=crop, crop_name=crop_name, analysis_date=d, category=category, soil_code=soil.code,
         current_last_period=asdict(last_assessed) if last_assessed else None, window=window, history=hist_summary,
-        meteo_stats=advisor.meteo_window_stats(df, d), soilgrids=sg_d, terrain=ter_d, surroundings=sur_d,
+        meteo_stats=advisor.meteo_window_stats(df, d), soilgrids=sg_d, terrain=ter_d, surroundings=sur_d, ditches=dit_d,
         balance=balance, comparison=comparison, forecast=fc,
     )
     if not is_today:
@@ -159,6 +164,7 @@ async def analyse(
         *([{"name": "ISRIC SoilGrids 2.0 – skład gleby, węgiel organiczny", "url": soilgrids.URL, "fetched_at": sg.fetched_at, "license": "CC BY 4.0"}] if sg else []),
         *([{"name": "GUGiK NMT – numeryczny model terenu", "url": terrain.URL, "fetched_at": ter.fetched_at, "license": "dane PZGiK udostępniane bez opłat"}] if ter else []),
         *([{"name": "IUNG-PIB – otoczenie działki (wody, lasy, gleby organiczne)", "url": iung.WMS_URL, "fetched_at": sur.fetched_at, "license": "dane publiczne IUNG-PIB"}] if sur else []),
+        *([{"name": "GUGiK BDOT10k – rowy melioracyjne i cieki", "url": ditches.URL, "fetched_at": dit.fetched_at, "license": "dane PZGiK udostępniane bez opłat"}] if dit else []),
         *([{"name": "Open-Meteo Forecast – prognoza 7 dni", "url": meteo.FORECAST_URL, "fetched_at": fc["fetched_at"], "license": "CC BY 4.0"}] if fc else []),
     ]
 
@@ -183,6 +189,7 @@ async def analyse(
         "soilgrids": sg_d,
         "terrain": ter_d,
         "surroundings": sur_d,
+        "ditches": dit_d,
         "meteo_window": advisor.meteo_window_stats(df, d),
         "causes": [asdict(c) for c in advice["causes"]],
         "recommendations": [asdict(r) for r in advice["recommendations"]],

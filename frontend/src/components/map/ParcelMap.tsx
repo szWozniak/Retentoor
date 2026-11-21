@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Circle, CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
+import { Circle, CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, WMSTileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { LocateFixed, Loader2 } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -130,6 +130,18 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
           attribution='Ortofotomapa &copy; <a href="https://www.geoportal.gov.pl">GUGiK</a>'
         />
         <ParcelBoundaries />
+        {/* drainage ditches (BDOT10k, GUGiK) – where a weir could hold water back */}
+        <WMSTileLayer
+          url="https://mapy.geoportal.gov.pl/wss/service/pub/guest/kompozycja_BDOT10k_WMS/MapServer/WMSServer"
+          params={{ layers: 'row', format: 'image/png', transparent: true, version: '1.3.0' } as L.WMSParams}
+          // this server does not support EPSG:3857 (requests hang) – ask in EPSG:4326; distortion is negligible at zoom 14+
+          crs={L.CRS.EPSG4326}
+          tileSize={512}
+          minZoom={15}
+          maxZoom={20}
+          opacity={0.9}
+          attribution="Rowy &copy; GUGiK (BDOT10k)"
+        />
         {parcel && (
           <GeoJSON
             key={`${parcel.id}-${color}`}
@@ -178,6 +190,9 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
         </div>
       )}
       <div className="pointer-events-none absolute bottom-8 left-3 z-[1000] flex flex-wrap gap-x-3 gap-y-1 rounded-md bg-background/85 px-2 py-1 text-[11px] text-foreground shadow-sm">
+        <span className="flex items-center gap-1">
+          <span className="h-0.5 w-3 rounded-full bg-[#3d8bd9]" /> rów melioracyjny
+        </span>
         {(['rolna', 'mieszana', 'nierolna'] as const).map((c) => (
           <span key={c} className="flex items-center gap-1">
             <span className="size-2.5 rounded-sm" style={{ background: LANDUSE_COLORS[c] }} /> {c}

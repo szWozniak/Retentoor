@@ -43,7 +43,10 @@ export function AnalysisProgress() {
                 >
                   {i < current ? <Check className="size-3" /> : i === current ? <Loader2 className="size-3 animate-spin" /> : null}
                 </span>
-                <span>{s.label}</span>
+                <span>
+                  {s.label}
+                  <span className="text-muted-foreground ml-2 text-xs">{s.src}</span>
+                </span>
               </li>
             ))}
           </ol>

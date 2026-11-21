@@ -5,12 +5,15 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
-const CAUSE_STYLE: Record<Cause['status'], { icon: typeof CheckCircle2; cls: string; label: string }> = {
-  tak: { icon: AlertTriangle, cls: 'text-error', label: 'główna przyczyna' },
-  częściowo: { icon: CircleMinus, cls: 'text-warning', label: 'częściowo' },
-  nie: { icon: CheckCircle2, cls: 'text-success', label: 'nie stwierdzono' },
-  'brak danych': { icon: CircleHelp, cls: 'text-muted-foreground', label: 'brak danych' },
+// status chip under the title – same place on every card; main causes first
+const CAUSE_STYLE: Record<Cause['status'], { icon: typeof CheckCircle2; badge: 'error' | 'warning' | 'secondary' | 'outline'; label: string; order: number }> = {
+  tak: { icon: AlertTriangle, badge: 'error', label: 'Główna przyczyna', order: 0 },
+  częściowo: { icon: CircleMinus, badge: 'warning', label: 'Częściowa przyczyna', order: 1 },
+  nie: { icon: CheckCircle2, badge: 'secondary', label: 'Nie jest przyczyną', order: 2 },
+  'brak danych': { icon: CircleHelp, badge: 'outline', label: 'Brak danych', order: 3 },
 }
+
+const CHIP = 'h-7 gap-1.5 px-2.5 text-sm [&>svg]:size-4!'
 
 export function CausesSection({ a }: { a: Analysis }) {
   return (
@@ -19,17 +22,15 @@ export function CausesSection({ a }: { a: Analysis }) {
         <CardTitle>Przyczyny</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3 md:grid-cols-2">
-        {a.causes.map((c) => {
+        {[...a.causes].sort((x, y) => CAUSE_STYLE[x.status].order - CAUSE_STYLE[y.status].order).map((c) => {
           const st = CAUSE_STYLE[c.status]
           return (
-            <div key={c.id} className="rounded-lg border p-3">
-              <div className="mb-1.5 flex items-start justify-between gap-2">
-                <p className="flex items-center gap-2 font-medium">
-                  <st.icon className={cn('size-4 shrink-0', st.cls)} aria-hidden /> {c.title}
-                </p>
-                <span className={cn('shrink-0 text-xs font-medium', st.cls)}>{st.label}</span>
-              </div>
-              <ul className="text-foreground/80 list-disc space-y-1 pl-5 text-sm leading-relaxed">
+            <div key={c.id} className="rounded-xl border p-4">
+              <p className="type-title-sm">{c.title}</p>
+              <Badge variant={st.badge} className={cn(CHIP, 'mt-2 mb-3')}>
+                <st.icon aria-hidden /> {st.label}
+              </Badge>
+              <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
                 {c.evidence.map((e) => (
                   <li key={e}>{e}</li>
                 ))}
@@ -53,12 +54,12 @@ const PRIO: Record<Recommendation['priority'], 'default' | 'secondary' | 'outlin
 
 function RecItem({ r, onLocate }: { r: Recommendation; onLocate?: (lat: number, lon: number) => void }) {
   return (
-    <div className={cn('bg-card rounded-lg border p-3', r.priority === 'wysoki' && 'border-primary/40 ring-primary/10 ring-1')}>
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-base font-semibold">{r.title}</p>
-        <Badge variant={PRIO[r.priority]}>{r.priority === 'wysoki' ? 'zrób w pierwszej kolejności' : `priorytet: ${r.priority}`}</Badge>
-      </div>
-      <p className="text-[15px] leading-relaxed">{r.action}</p>
+    <div className={cn('bg-card rounded-xl border p-4', r.priority === 'wysoki' && 'border-primary/50')}>
+      <p className="type-title-sm">{r.title}</p>
+      <Badge variant={PRIO[r.priority]} className={cn(CHIP, 'mt-2 mb-3', r.priority === 'wysoki' && 'bg-primary text-primary-foreground')}>
+        Priorytet {r.priority}
+      </Badge>
+      <p className="text-base">{r.action}</p>
       {/* print/PDF: justification always visible */}
       <ul className="print-block text-muted-foreground mt-2 list-disc space-y-0.5 pl-5 text-xs">
         {r.why.map((w) => (

@@ -28,11 +28,12 @@ const SECTIONS = [
 
 type Tone = 'bad' | 'warn' | 'ok' | 'info'
 
-const TONE: Record<Tone, { bar: string; chip: string; icon: typeof AlertTriangle }> = {
-  bad: { bar: 'border-l-status-critical', chip: 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300', icon: AlertTriangle },
-  warn: { bar: 'border-l-amber-500', chip: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300', icon: AlertTriangle },
-  ok: { bar: 'border-l-emerald-500', chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300', icon: CheckCircle2 },
-  info: { bar: 'border-l-primary', chip: 'bg-primary/10 text-primary', icon: CalendarRange },
+// M3 tonal containers: the whole banner takes the status colour (no accent stripes)
+const TONE: Record<Tone, { box: string; icon: typeof AlertTriangle }> = {
+  bad: { box: 'bg-error-container text-on-error-container', icon: AlertTriangle },
+  warn: { box: 'bg-warning-container text-on-warning-container', icon: AlertTriangle },
+  ok: { box: 'bg-success-container text-on-success-container', icon: CheckCircle2 },
+  info: { box: 'bg-surface-container text-foreground', icon: CalendarRange },
 }
 
 type Verdict = { tone: Tone; title: string; text: string }
@@ -102,15 +103,13 @@ function StatusBanner({ a }: { a: Analysis }) {
   const v = verdict(a)
   const t = TONE[v.tone]
   return (
-    <div role="status" className={cn('bg-card flex gap-4 rounded-xl border border-l-4 p-4 sm:p-5', t.bar)}>
-      <span className={cn('grid size-10 shrink-0 place-items-center rounded-full', t.chip)} aria-hidden>
-        <t.icon className="size-5" />
-      </span>
+    <div role="status" className={cn('flex gap-4 rounded-xl p-5 sm:p-6', t.box)}>
+      <t.icon className="mt-1 size-6 shrink-0" aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="text-xl leading-snug font-semibold text-balance sm:text-2xl">{v.title}</p>
-        <p className="text-foreground/80 mt-1 text-base text-pretty">{v.text}</p>
+        <p className="type-title text-balance sm:type-headline">{v.title}</p>
+        <p className="mt-1 text-base text-pretty">{v.text}</p>
         {a.recommendations.length > 0 && (
-          <a href="#rekomendacje" className="no-print text-primary mt-2 inline-flex items-center gap-1 text-sm font-medium hover:underline">
+          <a href="#rekomendacje" className="no-print mt-3 inline-flex items-center gap-1 text-sm font-bold underline underline-offset-3">
             Co możesz zrobić ({a.recommendations.length}) <ArrowDown className="size-3.5" aria-hidden />
           </a>
         )}
@@ -170,7 +169,7 @@ function HistoryGrid({ a }: { a: Analysis }) {
                   className={cn(
                     'h-6 min-w-6 rounded-sm text-center',
                     p.drought === true && 'bg-status-critical font-bold text-white',
-                    p.drought === false && 'bg-emerald-100 dark:bg-emerald-900/35',
+                    p.drought === false && 'bg-success/15',
                     p.drought === null && 'bg-muted',
                   )}
                 >
@@ -194,7 +193,7 @@ function HistoryGrid({ a }: { a: Analysis }) {
       </table>
       <p className="text-muted-foreground mt-2 text-xs">
         <span className="bg-status-critical mr-1 inline-block size-3 rounded-sm align-middle" /> susza (KBW poniżej progu)
-        <span className="mr-1 ml-3 inline-block size-3 rounded-sm bg-emerald-100 align-middle" /> bez suszy
+        <span className="mr-1 ml-3 inline-block size-3 rounded-sm bg-success/15 align-middle" /> bez suszy
         <span className="bg-muted mr-1 ml-3 inline-block size-3 rounded-sm align-middle" /> brak progu dla uprawy w tym okresie
       </p>
     </div>

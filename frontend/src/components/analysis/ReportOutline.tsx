@@ -67,12 +67,9 @@ export function ReportOutline({ items }: { items: OutlineItem[] }) {
                 type="button"
                 onClick={() => go(it.id)}
                 aria-current={state === 'active' ? 'true' : undefined}
-                className="group focus-visible:ring-ring/50 flex w-full items-center gap-3 rounded-md py-1.5 pr-2 text-left text-sm outline-none focus-visible:ring-[3px]"
+                className="group flex w-full items-center gap-3 rounded-md py-1.5 pr-2 text-left text-sm"
               >
                 <span className="relative grid size-[19px] shrink-0 place-items-center">
-                  {state === 'active' && (
-                    <span aria-hidden className="bg-primary/20 absolute inset-0 animate-ping rounded-full [animation-duration:2s] motion-reduce:hidden" />
-                  )}
                   <span
                     aria-hidden
                     className={cn(

@@ -141,7 +141,7 @@ export function PlaceSearch({ value, onChange, onParcelId, onPlace, busy }: Prop
         <ul
           id={listId}
           role="listbox"
-          className="bg-popover text-popover-foreground animate-fade-up absolute top-full right-12 left-0 z-[1200] mt-1 max-h-72 overflow-auto rounded-lg border p-1 shadow-lg"
+          className="bg-popover text-popover-foreground animate-fade-up absolute top-full right-12 left-0 z-[1200] mt-1 max-h-72 overflow-auto rounded-md border p-1 shadow-lg"
         >
           {results.length === 0 && (
             <li className="text-muted-foreground px-3 py-2 text-sm">Nie znaleziono. Spróbuj samej nazwy miejscowości albo kliknij pole na mapie.</li>

@@ -30,14 +30,14 @@ export function KpiCard({ label, value, delta, upIsGood = true, hint, icon, load
         <span>{label}</span>
         {icon}
       </div>
-      <div className="mt-2 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{value}</div>
+      <div className="mt-2 type-headline tabular-nums">{value}</div>
       {(delta !== undefined || hint) && (
         <div className="mt-1 flex items-center gap-2 text-xs">
           {delta !== undefined && (
             <span
               className={cn(
                 'inline-flex items-center gap-0.5 font-medium',
-                good === null ? 'text-muted-foreground' : good ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400',
+                good === null ? 'text-muted-foreground' : good ? 'text-success' : 'text-error',
               )}
             >
               <Icon className="size-3.5" aria-hidden />

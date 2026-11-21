@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { cn } from '@/lib/utils'
 
 const CAUSE_STYLE: Record<Cause['status'], { icon: typeof CheckCircle2; cls: string; label: string }> = {
-  tak: { icon: AlertTriangle, cls: 'text-red-600 dark:text-red-400', label: 'główna przyczyna' },
-  częściowo: { icon: CircleMinus, cls: 'text-amber-600 dark:text-amber-400', label: 'częściowo' },
-  nie: { icon: CheckCircle2, cls: 'text-emerald-600 dark:text-emerald-400', label: 'nie stwierdzono' },
+  tak: { icon: AlertTriangle, cls: 'text-error', label: 'główna przyczyna' },
+  częściowo: { icon: CircleMinus, cls: 'text-warning', label: 'częściowo' },
+  nie: { icon: CheckCircle2, cls: 'text-success', label: 'nie stwierdzono' },
   'brak danych': { icon: CircleHelp, cls: 'text-muted-foreground', label: 'brak danych' },
 }
 
@@ -86,7 +86,7 @@ function RecItem({ r, onLocate }: { r: Recommendation; onLocate?: (lat: number, 
         )}
       </div>
       {r.permit && (
-        <p className="mt-2 flex gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+        <p className="mt-2 flex gap-1.5 text-xs text-warning">
           <FileWarning className="mt-0.5 size-3.5 shrink-0" /> {r.permit}
         </p>
       )}

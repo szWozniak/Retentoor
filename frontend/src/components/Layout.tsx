@@ -50,11 +50,11 @@ export default function Layout() {
       <header className="no-print bg-background border-b">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
           <Link to="/" className="flex items-center gap-2.5" aria-label="Zatrzymaj Wodę – strona główna">
-            <span className="bg-primary text-primary-foreground grid size-9 place-items-center rounded-lg shadow-sm">
+            <span className="bg-primary text-primary-foreground grid size-9 place-items-center rounded-md">
               <Droplets className="size-5" aria-hidden />
             </span>
             <span className="leading-tight">
-              <span className="block font-semibold tracking-tight">Zatrzymaj Wodę</span>
+              <span className="block font-bold">Zatrzymaj Wodę</span>
               <span className="text-muted-foreground block text-xs">asystent retencji dla rolnika</span>
             </span>
           </Link>
@@ -84,7 +84,7 @@ export default function Layout() {
               className="text-muted-foreground hover:text-foreground flex items-center gap-2 rounded-md px-2 py-1 text-xs"
               title="Stan usług"
             >
-              <span className={cn('size-2 rounded-full', up ? 'bg-emerald-500' : 'bg-red-500')} aria-hidden />
+              <span className={cn('size-2 rounded-full', up ? 'bg-status-good' : 'bg-status-critical')} aria-hidden />
               <span className="hidden sm:inline">{up ? 'Usługi działają' : 'Brak połączenia z serwerem'}</span>
             </NavLink>
             <ThemeToggle />

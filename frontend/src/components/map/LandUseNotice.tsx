@@ -20,9 +20,9 @@ export function LandUseNotice({ landuse }: { landuse: LandUse }) {
   return (
     <Alert
       className={cn(
-        landuse.class === 'rolna' && '*:[svg]:text-emerald-600 dark:*:[svg]:text-emerald-400',
-        landuse.class === 'mieszana' && 'border-amber-300/70 bg-amber-50/60 *:[svg]:text-amber-600 dark:border-amber-900 dark:bg-amber-950/30',
-        landuse.class === 'nierolna' && 'border-red-300/70 bg-red-50/60 *:[svg]:text-red-600 dark:border-red-900 dark:bg-red-950/30',
+        landuse.class === 'rolna' && '*:[svg]:text-success',
+        landuse.class === 'mieszana' && 'border-transparent bg-warning-container text-on-warning-container',
+        landuse.class === 'nierolna' && 'border-transparent bg-error-container text-on-error-container',
       )}
     >
       <Icon aria-hidden />

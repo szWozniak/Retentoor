@@ -71,7 +71,7 @@ export default function FieldsPage() {
   return (
     <div className="grid max-w-3xl gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Moje pola</h1>
+        <h1 className="type-headline sm:type-display">Moje pola</h1>
         <p className="text-muted-foreground mt-1">Zapisane w tej przeglądarce. Nie zakładasz konta.</p>
       </div>
       {fields.length === 0 ? (

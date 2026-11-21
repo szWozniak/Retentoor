@@ -39,7 +39,7 @@ export function ReportHeader({ a, savedId, createdAt }: { a: Analysis; savedId?:
   return (
     <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-3">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">
+        <h2 className="type-title">
           Działka {a.parcel.number}, obręb {a.parcel.region} · {a.crop.name}
         </h2>
         <p className="text-muted-foreground text-sm">

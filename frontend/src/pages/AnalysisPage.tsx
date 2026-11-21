@@ -58,7 +58,7 @@ function StepTitle({ n, done, children }: { n: number; done: boolean; children: 
 function Intro() {
   return (
     <section className="animate-fade-up">
-      <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">Sprawdź, jak zatrzymać wodę na swoim polu</h1>
+      <h1 className="type-headline text-balance sm:type-display">Sprawdź, jak zatrzymać wodę na swoim polu</h1>
       <p className="text-muted-foreground mt-1 max-w-2xl text-pretty">
         Łączy dane pogodowe z 10 lat, mapy glebowe, ukształtowanie terenu i dane hydrologiczne. Pokazuje, czy działce grozi susza i co możesz
         zrobić.
@@ -210,7 +210,7 @@ export default function AnalysisPage() {
                           if (f.crop) setCrop(f.crop)
                         })
                       }
-                      className="hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-ring/50 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-[3px]"
+                      className="hover:bg-foreground/8 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors"
                     >
                       <Star className="text-primary size-3.5 fill-current" aria-hidden /> {f.name}
                     </button>
@@ -229,7 +229,7 @@ export default function AnalysisPage() {
                       type="button"
                       title={`${s.id} · ${s.hint}`}
                       onClick={() => loadParcel(() => api.parcelById(s.id))}
-                      className="hover:border-primary/50 hover:bg-primary/5 focus-visible:ring-ring/50 rounded-full border px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-[3px]"
+                      className="hover:bg-foreground/8 rounded-full border px-3 py-1.5 text-sm transition-colors"
                     >
                       {s.label}
                     </button>

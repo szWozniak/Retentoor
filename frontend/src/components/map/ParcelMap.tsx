@@ -172,7 +172,7 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
           type="button"
           onClick={onLocate}
           disabled={locating}
-          className="bg-background text-foreground hover:bg-muted absolute top-[86px] left-[11px] z-[1000] grid size-[34px] place-items-center rounded-md border shadow-sm"
+          className="bg-background text-foreground hover:bg-muted absolute top-[86px] left-[11px] z-[1000] grid size-[34px] place-items-center rounded-md border"
           aria-label="Pokaż moją lokalizację"
           title="Moja lokalizacja"
         >
@@ -189,9 +189,9 @@ export function ParcelMap({ parcel, markers, focus, userPos, onLocate, locating,
           Szukam działki…
         </div>
       )}
-      <div className="pointer-events-none absolute bottom-8 left-3 z-[1000] flex flex-wrap gap-x-3 gap-y-1 rounded-md bg-background/85 px-2 py-1 text-[11px] text-foreground shadow-sm">
+      <div className="pointer-events-none absolute bottom-8 left-3 z-[1000] flex flex-wrap gap-x-3 gap-y-1 rounded-md bg-background/90 px-2 py-1 text-xs text-foreground">
         <span className="flex items-center gap-1">
-          <span className="h-0.5 w-3 rounded-full bg-[#3d8bd9]" /> rów melioracyjny
+          <span className="h-0.5 w-3 rounded-full bg-chart-1" /> rów melioracyjny
         </span>
         {(['rolna', 'mieszana', 'nierolna'] as const).map((c) => (
           <span key={c} className="flex items-center gap-1">

@@ -38,7 +38,7 @@ export default function DashboardPage() {
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Dashboard (demo)</h2>
+          <h2 className="type-headline">Dashboard (demo)</h2>
           <p className="text-muted-foreground text-sm">Przykładowe dane, gotowe klocki do wykorzystania w zadaniu</p>
         </div>
         <div className="flex flex-wrap gap-2">

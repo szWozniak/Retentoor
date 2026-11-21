@@ -380,7 +380,7 @@ select.app-select {
 
 /* anchor targets clear the sticky section bar */
 [data-section] {
-  scroll-margin-top: 4.5rem;
+  scroll-margin-top: 1.5rem;
 }
 
 @keyframes fade-up {

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { KpiCard } from '@/components/charts'
 import { CausesSection, CropComparison, RecommendationsSection } from './AdviceSections'
+import { ReportOutline } from './ReportOutline'
 import { formatDate, formatDateShort, formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -16,35 +17,13 @@ const mm = (v: number | null | undefined) =>
 const thr = (v: number | string | null | undefined) => (typeof v === 'number' ? mm(v) : '–')
 
 const SECTIONS = [
-  { id: 'ocena', label: 'Ocena' },
-  { id: 'historia', label: 'Historia' },
+  { id: 'ocena', label: 'Ocena sytuacji' },
+  { id: 'historia', label: 'Historia suszy' },
   { id: 'przyczyny', label: 'Przyczyny' },
-  { id: 'rekomendacje', label: 'Rekomendacje' },
-  { id: 'uprawy', label: 'Uprawy' },
-  { id: 'zrodla', label: 'Źródła' },
+  { id: 'rekomendacje', label: 'Co możesz zrobić' },
+  { id: 'uprawy', label: 'Porównanie upraw' },
+  { id: 'zrodla', label: 'Źródła i wiarygodność' },
 ]
-
-function SectionNav() {
-  return (
-    <nav
-      aria-label="Sekcje raportu"
-      className="no-print bg-background/90 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-[1100] -mx-4 border-b px-4 py-2 backdrop-blur"
-    >
-      <ul className="flex gap-1 overflow-x-auto text-sm">
-        {SECTIONS.map((s) => (
-          <li key={s.id}>
-            <a
-              href={`#${s.id}`}
-              className="text-muted-foreground hover:text-foreground hover:bg-muted block rounded-md px-3 py-1.5 whitespace-nowrap transition-colors"
-            >
-              {s.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  )
-}
 
 type Tone = 'bad' | 'warn' | 'ok' | 'info'
 
@@ -216,8 +195,8 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
   const worst = [...a.history.period_frequency].sort((x, y) => y.share - x.share)[0]
 
   return (
-    <div className="grid gap-4">
-      <SectionNav />
+    <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_190px]">
+      <div className="grid gap-4">
       <section id="ocena" data-section className="grid gap-4">
       <StatusBanner a={a} />
 
@@ -323,6 +302,8 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
           <p className="text-muted-foreground text-xs">Analiza na dzień {formatDate(a.analysis_date)} · wyliczona w {a.elapsed_s} s</p>
         </CardContent>
       </Card>
+      </div>
+      <ReportOutline items={SECTIONS.filter((x) => x.id !== 'historia' || a.history.years.length > 0)} />
     </div>
   )
 }

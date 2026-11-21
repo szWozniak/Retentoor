@@ -19,7 +19,7 @@ _geod = Geod(ellps="GRS80")
 
 
 class ParcelNotFound(Exception):
-    pass
+    cooldown = False  # a valid answer – never triggers the cache retry cooldown
 
 
 class UldkError(Exception):
@@ -102,7 +102,7 @@ async def _lookup(cache_key: str, params: dict) -> Parcel:
         raise UldkError(
             "Usługa GUGiK z granicami działek (ULDK) chwilowo nie odpowiada poprawnie. Spróbuj ponownie za kilka minut."
         ) from e
-    except (httpx.HTTPError, ValueError) as e:
+    except (httpx.HTTPError, ValueError, cache.CoolingDown) as e:
         raise UldkError(
             "Usługa GUGiK z granicami działek (ULDK) chwilowo nie odpowiada poprawnie. Spróbuj ponownie za kilka minut."
         ) from e

@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import tempfile
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -17,6 +18,17 @@ from pathlib import Path
 from ..config import settings
 
 ROOT = Path(settings.cache_dir)
+# After a failed refresh, serve the stale entry straight away for this long instead of retrying on every
+# request (rate-limited services – Open-Meteo 429, GUGiK limit – would otherwise add seconds to each analysis).
+RETRY_COOLDOWN_S = 600
+# Without any stale entry, fail fast for a shorter time (callers then use their fallback source at once).
+FAIL_FAST_S = 120
+_cooldown: dict[tuple[str, str], float] = {}
+_last_error: dict[tuple[str, str], Exception] = {}
+
+
+class CoolingDown(Exception):
+    """Fetch skipped: the same request failed moments ago."""
 
 
 @dataclass
@@ -65,12 +77,24 @@ async def cached(
     hit = get(source, key, max_age)
     if hit:
         return hit.payload, hit.fetched_at, True
-    try:
-        payload = await fetch()
-    except Exception:
-        stale = get(source, key)  # ignore max_age: better old data than none
+    if _cooldown.get((source, key), 0) > time.monotonic():
+        stale = get(source, key)
         if stale:
             return stale.payload, stale.fetched_at, True
+        raise _last_error.get((source, key)) or CoolingDown(f"{source}: recent fetch failed, retry later")
+    try:
+        payload = await fetch()
+    except Exception as e:
+        if not getattr(e, "cooldown", True):  # an answer, not a failure (e.g. "parcel not found")
+            raise
+        stale = get(source, key)  # ignore max_age: better old data than none
+        if stale:
+            _cooldown[(source, key)] = time.monotonic() + RETRY_COOLDOWN_S
+            return stale.payload, stale.fetched_at, True
+        _cooldown[(source, key)] = time.monotonic() + FAIL_FAST_S
+        _last_error[(source, key)] = e
         raise
+    _cooldown.pop((source, key), None)
+    _last_error.pop((source, key), None)
     entry = put(source, key, payload)
     return payload, entry.fetched_at, False

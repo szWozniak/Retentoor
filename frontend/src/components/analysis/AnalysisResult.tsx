@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, CircleHelp, Droplets, Info } from 'lucide-react'
+import { AlertTriangle, ArrowDown, CalendarRange, CheckCircle2, Droplets, Info } from 'lucide-react'
 import { CartesianGrid, ComposedChart, Line, ReferenceLine, Scatter, XAxis, YAxis } from 'recharts'
 import type { Analysis } from '@/api'
 import { Badge } from '@/components/ui/badge'
@@ -46,73 +46,94 @@ function SectionNav() {
   )
 }
 
-function StatusBanner({ a }: { a: Analysis }) {
+type Tone = 'bad' | 'warn' | 'ok' | 'info'
+
+const TONE: Record<Tone, { bar: string; chip: string; icon: typeof AlertTriangle }> = {
+  bad: { bar: 'border-l-status-critical', chip: 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300', icon: AlertTriangle },
+  warn: { bar: 'border-l-amber-500', chip: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300', icon: AlertTriangle },
+  ok: { bar: 'border-l-emerald-500', chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300', icon: CheckCircle2 },
+  info: { bar: 'border-l-primary', chip: 'bg-primary/10 text-primary', icon: CalendarRange },
+}
+
+type Verdict = { tone: Tone; title: string; text: string }
+
+/** Plain-language verdict. Outside the IUNG monitoring season (21.III–30.IX) it summarises the last finished season. */
+function verdict(a: Analysis): Verdict {
   const lp = a.current.last_period
   const w = a.current.window
-  let tone: 'bad' | 'warn' | 'ok' | 'unknown' = 'unknown'
-  let title = 'Nie można jednoznacznie ocenić suszy'
-  let text = ''
+  const crop = a.crop.name.toLowerCase()
+  const d = new Date(a.analysis_date)
 
-  if (lp && lp.drought) {
-    tone = 'bad'
-    title = 'Susza rolnicza dla tej uprawy'
-    text = `W ostatnim zakończonym okresie (${lp.period}) bilans wodny wyniósł ${mm(lp.kbw)}, poniżej progu ${thr(lp.threshold)} dla uprawy „${a.crop.name.toLowerCase()}” na glebie kat. ${a.soil.category_used}.`
-  } else if (lp && lp.drought === false) {
+  if (a.current.in_season && lp && lp.drought !== null) {
+    if (lp.drought)
+      return {
+        tone: 'bad',
+        title: 'Susza rolnicza dla tej uprawy',
+        text: `W ostatnim zakończonym okresie (${lp.period}) bilans wodny wyniósł ${mm(lp.kbw)}, poniżej progu ${thr(lp.threshold)} dla uprawy „${crop}” na glebie kat. ${a.soil.category_used}.`,
+      }
     const close = lp.margin !== null && lp.margin < 30
-    tone = close ? 'warn' : 'ok'
-    title = close ? 'Blisko progu suszy' : 'Brak suszy rolniczej'
-    text = `W ostatnim zakończonym okresie (${lp.period}) bilans wodny wyniósł ${mm(lp.kbw)} przy progu suszy ${thr(lp.threshold)} – zapas ${Math.round(lp.margin ?? 0)}\u00a0mm.`
-  } else if (w.kbw !== null) {
-    text = !a.current.in_season
-      ? `Data poza okresem monitoringu suszy IUNG (21.III–30.IX). Bilans wodny z ostatnich 60 dni: ${mm(w.kbw)}.`
-      : `Dla tej uprawy w bieżącym okresie nie ma progu suszy (brak spadków plonu w tym czasie). Bilans z ostatnich 60 dni: ${mm(w.kbw)}.`
+    return {
+      tone: close ? 'warn' : 'ok',
+      title: close ? 'Blisko progu suszy' : 'Brak suszy rolniczej',
+      text: `W ostatnim zakończonym okresie (${lp.period}) bilans wodny wyniósł ${mm(lp.kbw)} przy progu suszy ${thr(lp.threshold)} – zapas ${Math.round(lp.margin ?? 0)} mm.`,
+    }
   }
 
-  // top 3 actions: highest priority first, keeping the retention-first order within the same priority
-  const rank = { wysoki: 0, średni: 1, niski: 2 } as const
-  // retention before irrigation (KOWR): irrigation can only take the 3rd slot, and only when it's advised
-  const ranked = [...a.recommendations]
-    .map((r, i) => ({ r, i }))
-    .filter((x) => x.r.stage !== 'nawadnianie')
-    .sort((x, y) => rank[x.r.priority] - rank[y.r.priority] || x.i - y.i)
-    .map((x) => x.r)
-  const irrigation = a.recommendations.find((r) => r.stage === 'nawadnianie' && a.irrigation?.decision === 'zasadne')
-  const top = irrigation ? [...ranked.slice(0, 2), irrigation] : ranked.slice(0, 3)
+  if (a.current.in_season) {
+    return {
+      tone: 'info',
+      title: 'W tym okresie uprawa nie jest wrażliwa na suszę',
+      text: `Dla uprawy „${crop}” IUNG nie wyznacza w tym czasie progu suszy (brak spadków plonu). Bilans wodny z ostatnich 60 dni: ${mm(w.kbw)}.`,
+    }
+  }
 
-  const Icon = tone === 'bad' ? AlertTriangle : tone === 'ok' ? CheckCircle2 : tone === 'warn' ? AlertTriangle : CircleHelp
+  // outside the season: summarise the last finished season (this year after 30.IX, otherwise last year)
+  const afterSeason = d.getMonth() >= 9
+  const year = afterSeason ? d.getFullYear() : d.getFullYear() - 1
+  const periods = afterSeason
+    ? a.current.season_periods.map((p) => ({ period: p.period, drought: p.drought, margin: p.margin }))
+    : (a.history.years.find((y) => y.year === year)?.periods ?? []).map((p) => ({
+        period: p.period,
+        drought: p.drought,
+        margin: typeof p.threshold === 'number' && p.kbw !== null ? p.kbw - p.threshold : null,
+      }))
+  const assessed = periods.filter((p) => p.drought !== null)
+  const note = `Monitoring suszy IUNG obejmuje okres 21.III–30.IX, więc podsumowujemy sezon ${year}.`
+
+  if (!assessed.length)
+    return { tone: 'info', title: 'Poza sezonem wegetacyjnym', text: `${note} Bilans wodny z ostatnich 60 dni: ${mm(w.kbw)}.` }
+
+  const dry = assessed.filter((p) => p.drought)
+  if (dry.length)
+    return {
+      tone: 'warn',
+      title: `Sezon ${year}: susza w ${dry.length === 1 ? 'okresie' : 'okresach'} ${dry.map((p) => p.period).join(', ')}`,
+      text: `${note} Bilans wodny spadł poniżej progu suszy dla uprawy „${crop}” na glebie kat. ${a.soil.category_used}.`,
+    }
+  const tightest = [...assessed].sort((x, y) => (x.margin ?? 1e9) - (y.margin ?? 1e9))[0]
+  return {
+    tone: 'ok',
+    title: `Sezon ${year}: bez suszy rolniczej`,
+    text: `${note} Najmniejszy zapas do progu suszy: ${Math.round(tightest.margin ?? 0)} mm (okres ${tightest.period}).`,
+  }
+}
+
+function StatusBanner({ a }: { a: Analysis }) {
+  const v = verdict(a)
+  const t = TONE[v.tone]
   return (
-    <div
-      role="status"
-      className={cn(
-        'flex gap-3 rounded-xl border p-4 sm:p-5',
-        tone === 'bad' && 'border-red-300 bg-red-50 text-red-900 dark:bg-red-950/40 dark:text-red-100',
-        tone === 'warn' && 'border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100',
-        tone === 'ok' && 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100',
-        tone === 'unknown' && 'bg-muted',
-      )}
-    >
-      <Icon className="mt-1 size-6 shrink-0" aria-hidden />
+    <div role="status" className={cn('bg-card flex gap-4 rounded-xl border border-l-4 p-4 sm:p-5', t.bar)}>
+      <span className={cn('grid size-10 shrink-0 place-items-center rounded-full', t.chip)} aria-hidden>
+        <t.icon className="size-5" />
+      </span>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium tracking-wide uppercase opacity-70">W skrócie</p>
-        <p className="text-lg font-semibold">{title}</p>
-        {text && <p className="mt-0.5 text-sm">{text}</p>}
-        {top.length > 0 && (
-          <div className="mt-3">
-            <p className="mb-1 text-sm font-medium">Najważniejsze działania:</p>
-            <ol className="grid gap-1.5 text-sm sm:grid-cols-3">
-              {top.map((r, i) => (
-                <li key={r.id}>
-                  <a
-                    href="#rekomendacje"
-                    className="flex h-full gap-2 rounded-md bg-white/60 px-2.5 py-1.5 transition-colors hover:bg-white/90 dark:bg-white/5 dark:hover:bg-white/10"
-                  >
-                    <span className="font-semibold tabular-nums">{i + 1}.</span>
-                    <span>{r.title}</span>
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </div>
+        <p className="text-muted-foreground text-xs font-medium">Ocena sytuacji wodnej · stan na {formatDate(a.analysis_date)}</p>
+        <p className="mt-0.5 text-lg leading-snug font-semibold text-balance">{v.title}</p>
+        <p className="text-muted-foreground mt-1 text-sm text-pretty">{v.text}</p>
+        {a.recommendations.length > 0 && (
+          <a href="#rekomendacje" className="no-print text-primary mt-2 inline-flex items-center gap-1 text-sm font-medium hover:underline">
+            Zobacz, co możesz zrobić ({a.recommendations.length} rekomendacji) <ArrowDown className="size-3.5" aria-hidden />
+          </a>
         )}
       </div>
     </div>
@@ -208,9 +229,15 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
           icon={<Droplets className="size-4" />}
         />
         <KpiCard
-          label="Na tle wielolecia"
-          value={w.percentile !== null ? `${w.percentile}. percentyl` : '–'}
-          hint={w.percentile !== null ? (w.percentile <= 20 ? 'jeden z najsuchszych okresów' : w.percentile >= 80 ? 'wilgotniej niż zwykle' : 'typowo') : undefined}
+          label="Na tle ostatnich 10 lat"
+          value={w.percentile === null ? '–' : w.percentile <= 10 ? 'bardzo sucho' : w.percentile <= 30 ? 'sucho' : w.percentile < 70 ? 'typowo' : 'wilgotno'}
+          hint={
+            w.percentile === null
+              ? undefined
+              : w.percentile === 0
+                ? 'najsuchsze 60 dni w tym terminie od 10 lat'
+                : `suchsze niż ${100 - w.percentile}% lat (${w.percentile}. percentyl)`
+          }
         />
         <KpiCard
           label="Lata z suszą (z 10)"

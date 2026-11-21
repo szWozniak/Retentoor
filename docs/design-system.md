@@ -1,4 +1,4 @@
-# Design system – Zatrzymaj Wodę
+# Design system – Retentoor
 
 The component library is shadcn/ui (Base UI). Every visual value comes from tokens in `frontend/src/index.css`. Do not use raw Tailwind colours (`red-500`, `emerald-100`, …) or arbitrary values in components.
 
@@ -29,3 +29,10 @@ The system combines two sources:
 - icons used as decoration with no meaning.
 
 Note: gov.pl does not publish a public token package, so we adopt its rules (typeface, readability, focus, links) rather than its exact values.
+
+## Brand
+
+- Name: **Retentoor**. The wordmark is Lato Bold, with "too" in `primary` (a quiet emphasis on the "oo", like two drops).
+- Mark: a drop of water held in a field basin, i.e. retention. Files: `docs/brand/retentoor-mark.svg` (mark on a tile, also the favicon) and `docs/brand/retentoor-logo.svg` (horizontal lockup). In the app: `components/Logo.tsx` (`LogoMark` uses `currentColor`).
+- Tagline: "asystent retencji wody dla rolnika".
+- The mark sits on the `primary` tile (#2b6a46) with white drawing; minimum size is 16 px (favicon).

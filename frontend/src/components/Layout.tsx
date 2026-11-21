@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { Droplets } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { Logo } from '@/components/Logo'
 import { useSavedFields } from '@/lib/fields'
 
 /** Farmer-facing navigation. */
@@ -46,14 +46,8 @@ export default function Layout() {
       </a>
       <header className="no-print bg-background border-b select-none">
         <div className="mx-auto flex max-w-page flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <Link to="/" className="flex items-center gap-2.5" aria-label="Zatrzymaj Wodę – strona główna">
-            <span className="bg-primary text-primary-foreground grid size-9 place-items-center rounded-md">
-              <Droplets className="size-5" aria-hidden />
-            </span>
-            <span className="leading-tight">
-              <span className="block font-bold">Zatrzymaj Wodę</span>
-              <span className="text-muted-foreground block text-xs">asystent retencji dla rolnika</span>
-            </span>
+          <Link to="/" aria-label="Retentoor – strona główna">
+            <Logo />
           </Link>
           <nav className="flex gap-1" aria-label="Główna nawigacja">
             {links.map((l) => (
@@ -88,7 +82,7 @@ export default function Layout() {
       <footer className="no-print text-muted-foreground border-t text-xs">
         <div className="mx-auto flex max-w-page flex-col gap-2 px-4 py-5 sm:flex-row sm:items-start sm:justify-between">
           <p className="max-w-2xl">
-            Prototyp przygotowany na HackNation 2026 (zadanie KOWR „Zatrzymaj wodę, chroń plony”). Rekomendacje mają charakter
+            Retentoor – prototyp przygotowany na HackNation 2026 (zadanie KOWR „Zatrzymaj wodę, chroń plony”). Rekomendacje mają charakter
             informacyjny i nie zastępują porady doradcy rolnego ani decyzji administracyjnych.
           </p>
           <p className="sm:text-right">

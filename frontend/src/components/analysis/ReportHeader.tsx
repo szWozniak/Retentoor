@@ -5,6 +5,7 @@ import type { Analysis } from '@/api'
 import { api } from '@/api'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatDateTime } from '@/lib/format'
+import { Logo } from '@/components/Logo'
 
 /** Title block of the report + actions (print/PDF, save in the system). Actions are hidden in print. */
 export function ReportHeader({ a, savedId, createdAt }: { a: Analysis; savedId?: string; createdAt?: string }) {
@@ -38,6 +39,10 @@ export function ReportHeader({ a, savedId, createdAt }: { a: Analysis; savedId?:
 
   return (
     <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-3">
+      {/* PDF / print: brand at the top of the page (the app header is hidden in print) */}
+      <div className="print-block mb-2 w-full">
+        <Logo />
+      </div>
       <div>
         <h2 className="type-title">
           Działka {a.parcel.number}, obręb {a.parcel.region} · {a.crop.name}

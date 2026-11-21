@@ -18,14 +18,15 @@ export type SavedField = {
   savedAt: string
 }
 
-const KEY = 'zatrzymaj-wode.fields'
+const KEY = 'retentoor.fields'
+const OLD_KEY = 'zatrzymaj-wode.fields' // before the rename – read once and migrate
 const listeners = new Set<() => void>()
 let cache: SavedField[] | null = null
 
 function read(): SavedField[] {
   if (cache) return cache
   try {
-    cache = JSON.parse(localStorage.getItem(KEY) ?? '[]') as SavedField[]
+    cache = JSON.parse(localStorage.getItem(KEY) ?? localStorage.getItem(OLD_KEY) ?? '[]') as SavedField[]
   } catch {
     cache = []
   }

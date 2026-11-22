@@ -176,6 +176,8 @@ export type Runoff = {
   source: Source
 }
 
+export type Season = { year: number; frames: SceneStats[]; elapsed_s: number }
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -210,6 +212,7 @@ export const api = {
   analyse: (parcelId: string, crop: string, date: string) =>
     request<Analysis>(`/analysis?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`),
   runoff: (parcelId: string) => request<Runoff>(`/analysis/runoff?parcel_id=${encodeURIComponent(parcelId)}`),
+  season: (parcelId: string, date: string) => request<Season>(`/analysis/satellite/season?parcel_id=${encodeURIComponent(parcelId)}&date=${date}`),
   satellite: (parcelId: string, crop: string, date: string) =>
     request<Satellite>(`/analysis/satellite?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`),
 }

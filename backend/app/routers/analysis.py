@@ -79,6 +79,27 @@ async def runoff_map(parcel_id: str = Query(..., min_length=3, max_length=100)):
     }
 
 
+@router.get("/satellite/season")
+async def satellite_season(
+    parcel_id: str = Query(..., min_length=3, max_length=100),
+    analysis_date: date | None = Query(None, alias="date"),
+):
+    """Cloud-free Sentinel-2 frames of the parcel through one growing season (for the time-lapse player)."""
+    t0 = time.perf_counter()
+    try:
+        parcel = await uldk.by_id(parcel_id)
+    except uldk.ParcelNotFound:
+        raise HTTPException(404, "Nie znaleziono działki.")
+    except uldk.UldkError as e:
+        raise HTTPException(503, str(e))
+    year = sentinel.season_year(analysis_date or date.today())
+    try:
+        frames = await asyncio.wait_for(sentinel.season(parcel.geometry, year), 90)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(503, "Zdjęcia satelitarne Sentinel-2 są chwilowo niedostępne (Earth Search / AWS nie odpowiada). Spróbuj ponownie później.") from e
+    return {"year": year, "frames": [asdict(f) for f in frames], "elapsed_s": round(time.perf_counter() - t0, 2)}
+
+
 @router.get("/satellite/image")
 async def satellite_image(
     scene: str = Query(..., max_length=40),

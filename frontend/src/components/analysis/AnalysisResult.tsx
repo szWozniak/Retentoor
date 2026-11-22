@@ -9,6 +9,7 @@ import { KpiCard } from '@/components/charts'
 import { CausesSection, CropComparison, RecommendationsSection } from './AdviceSections'
 import { ReportOutline } from './ReportOutline'
 import { SatelliteCard } from './SatelliteCard'
+import { SeasonCard } from './SeasonCard'
 import { WaterCard } from './WaterCard'
 import { formatDate, formatDateShort, formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -264,6 +265,7 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
       </Card>
 
       <SatelliteCard a={a} />
+      <SeasonCard a={a} />
       </section>
 
       {a.history.years.length > 0 && (

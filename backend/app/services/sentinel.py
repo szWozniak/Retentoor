@@ -345,3 +345,34 @@ async def image(scene: str, geom_geojson: dict, kind: str) -> bytes:
     png = await asyncio.get_running_loop().run_in_executor(_pool, _render, item, geom_geojson, kind)
     cache.put("s2_png", key, base64.b64encode(png).decode())
     return png
+
+
+# ---------------------------------------------------------------- season time-lapse
+
+SEASON_START, SEASON_END = (3, 1), (10, 31)
+SEASON_MAX_CLOUD = 50  # scene-level prefilter; the parcel itself must still be ≥ MIN_CLEAR_SHARE clear
+
+
+def season_year(analysis_date: date) -> int:
+    """The growing season to show: this year's once it has started (April), otherwise last year's."""
+    d = min(analysis_date, date.today())
+    return d.year if d.month >= 4 else d.year - 1
+
+
+async def season(geom_geojson: dict, year: int) -> list[SceneStats]:
+    """Cloud-free frames of the parcel through one growing season (at most one per week, least cloudy first)."""
+    g = shape(geom_geojson)
+    minx, miny, maxx, maxy = g.bounds
+    start = date(year, *SEASON_START)
+    end = min(date(year, *SEASON_END), date.today())
+    if end <= start:
+        return []
+    items = await _search([minx, miny, maxx, maxy], start, end, SEASON_MAX_CLOUD, 100)
+    # least cloudy scene of each ISO week keeps reads (and the cold wait) small
+    weekly: dict[tuple[int, int], dict] = {}
+    for it in items:
+        wk = date.fromisoformat(it["properties"]["datetime"][:10]).isocalendar()[:2]
+        if wk not in weekly or it["properties"]["eo:cloud_cover"] < weekly[wk]["properties"]["eo:cloud_cover"]:
+            weekly[wk] = it
+    stats = await _stats(list(weekly.values()), geom_geojson)
+    return sorted((s for s in stats if _usable(s)), key=lambda s: s.date)

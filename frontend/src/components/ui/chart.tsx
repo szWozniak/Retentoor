@@ -197,7 +197,8 @@ function ChartTooltipContent({
       {!nestLabel ? tooltipLabel : null}
       <div className="grid gap-1.5">
         {payload
-          .filter((item) => item.type !== "none")
+          // a Scatter series also puts its x value (e.g. "date") into the payload; show only configured series
+          .filter((item) => item.type !== "none" && (item.dataKey === undefined || String(item.dataKey) in config))
           .map((item, index) => {
             const key = `${nameKey ?? item.name ?? item.dataKey ?? "value"}`
             const itemConfig = getPayloadConfigFromPayload(config, item, key)

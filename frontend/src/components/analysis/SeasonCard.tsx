@@ -98,7 +98,7 @@ export function SeasonCard({ a }: { a: Analysis }) {
   }
 
   return (
-    <Card>
+    <Card className={season ? undefined : 'no-print'}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Satellite className="text-muted-foreground size-5" aria-hidden /> Sezon {season?.year ?? year} z satelity

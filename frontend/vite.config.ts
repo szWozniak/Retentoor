@@ -11,6 +11,8 @@ export default defineConfig({
   },
   server: {
     host: true,
+    // Public demo link through an ngrok tunnel (Vite 6 blocks unknown Host headers).
+    allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev', '.ngrok.app', '.ngrok.io'],
     proxy: {
       '/api': process.env.API_URL ?? 'http://localhost:8000',
     },

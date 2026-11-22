@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<title>Retentoor – prezentacja</title>
+<style>
+  @font-face { font-family: Lato; font-weight: 400; src: url(fonts/lato-latin-ext-400-normal.woff2) format('woff2'); unicode-range: U+0100-024F; }
+  @font-face { font-family: Lato; font-weight: 400; src: url(fonts/lato-latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: Lato; font-weight: 700; src: url(fonts/lato-latin-ext-700-normal.woff2) format('woff2'); unicode-range: U+0100-024F; }
+  @font-face { font-family: Lato; font-weight: 700; src: url(fonts/lato-latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: Lato; font-weight: 900; src: url(fonts/lato-latin-ext-900-normal.woff2) format('woff2'); unicode-range: U+0100-024F; }
+  @font-face { font-family: Lato; font-weight: 900; src: url(fonts/lato-latin-900-normal.woff2) format('woff2'); }
+
+  :root {
+    --green: #15803d; --green-2: #dcfce7; --green-ink: #14532d;
+    --ink: #1b1b1b; --muted: #4d4d4d; --line: #d6d6d6; --soft: #f2f2f2;
+    --red: #ba1a1a; --red-2: #ffdad6; --blue: #0284c7;
+  }
+  @page { size: 1920px 1080px; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #e5e5e5; }
+  body { font-family: Lato, system-ui, sans-serif; color: var(--ink); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slide {
+    width: 1920px; height: 1080px; background: #fff; position: relative; overflow: hidden;
+    padding: 84px 96px 72px; display: flex; flex-direction: column; gap: 36px;
+    page-break-after: always; break-after: page; margin: 0 auto 40px;
+  }
+  @media print { .slide { margin: 0; } html, body { background: #fff; } }
+  .top { position: absolute; top: 36px; left: 96px; right: 96px; display: flex; justify-content: space-between; font-size: 20px; color: var(--muted); }
+  .top b { color: var(--ink); } .top b i { font-style: normal; color: var(--green); }
+  h1 { font-size: 66px; line-height: 1.05; font-weight: 900; letter-spacing: -0.01em; max-width: 1500px; }
+  h1 em { font-style: normal; color: var(--green); }
+  .lead { font-size: 30px; line-height: 1.35; color: var(--muted); max-width: 1500px; }
+  .row { display: flex; gap: 56px; flex: 1; min-height: 0; }
+  .col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+  ul.pts { list-style: none; display: grid; gap: 22px; font-size: 28px; line-height: 1.35; }
+  ul.pts li { padding-left: 34px; position: relative; }
+  ul.pts li::before { content: ''; position: absolute; left: 0; top: 14px; width: 14px; height: 14px; border-radius: 50%; background: var(--green); }
+  ul.pts b { font-weight: 900; }
+  .shot { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 18px 50px rgb(0 0 0 / 0.14); background: #fff; }
+  .shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+  .shot.fit { height: auto; align-self: flex-start; }
+  .shot.fit img { height: auto; }
+  .big { font-size: 84px; font-weight: 900; line-height: 1; color: var(--green); }
+  .big small { font-size: 32px; font-weight: 700; color: var(--muted); }
+  .note { font-size: 20px; color: var(--muted); }
+  .chip { display: inline-flex; align-items: center; gap: 10px; padding: 8px 18px; border-radius: 999px; background: var(--green-2); color: var(--green-ink); font-weight: 700; font-size: 22px; }
+  .stages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .stage { background: var(--soft); border-radius: 12px; padding: 18px 20px; font-size: 22px; font-weight: 700; display: flex; gap: 14px; align-items: center; }
+  .stage span { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; font-weight: 900; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .tile { border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; }
+  .tile h3 { font-size: 26px; font-weight: 900; margin-bottom: 6px; }
+  .tile p { font-size: 20px; color: var(--muted); line-height: 1.35; }
+  table { border-collapse: collapse; width: 100%; font-size: 21px; }
+  td, th { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.3; }
+  th { font-size: 18px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  td.cut { font-weight: 900; color: var(--red); white-space: nowrap; width: 70px; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .kpi { background: var(--soft); border-radius: 14px; padding: 22px 26px; }
+  .kpi .v { font-size: 52px; font-weight: 900; line-height: 1.05; }
+  .kpi .l { font-size: 21px; color: var(--muted); margin-top: 6px; line-height: 1.3; }
+  .arch { display: grid; grid-template-columns: 1fr 70px 1.25fr 70px 1.1fr; align-items: center; gap: 0; }
+  .box { border: 2px solid var(--line); border-radius: 14px; padding: 22px; font-size: 21px; line-height: 1.4; background: #fff; }
+  .box h4 { font-size: 24px; font-weight: 900; margin-bottom: 8px; }
+  .box.g { border-color: var(--green); background: #f6fdf8; }
+  .arrow { text-align: center; font-size: 40px; color: var(--green); font-weight: 900; }
+  .phone { width: 300px; border: 10px solid #111; border-radius: 38px; overflow: hidden; box-shadow: 0 22px 60px rgb(0 0 0 / 0.25); background: #111; }
+  .phone img { display: block; width: 100%; }
+  .wordmark { font-size: 124px; font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
+  .wordmark i { font-style: normal; color: var(--green); }
+  .verdict { background: var(--red-2); color: #93000a; border-radius: 14px; padding: 22px 26px; font-size: 26px; line-height: 1.35; }
+  .verdict b { font-size: 32px; display: block; margin-bottom: 4px; }
+  .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+  .cols3 .tile h3 { color: var(--green); }
+  .cols3 .tile ul { margin-top: 10px; padding-left: 22px; font-size: 22px; line-height: 1.45; color: var(--ink); }
+  .steps5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; margin-top: auto; }
+  .steps5 .tile { display: flex; flex-direction: column; gap: 8px; padding: 20px 22px; }
+  .steps5 .tile.on { border: 2px solid var(--green); background: #f6fdf8; }
+  .steps5 h3 { display: flex; align-items: center; gap: 12px; font-size: 25px; margin: 0; }
+  .steps5 h3 span { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; font-size: 19px; }
+  .steps5 .src { margin-top: auto; font-size: 17px; font-weight: 700; color: var(--green-ink); }
+</style>
+</head>
+<body>
+
+<!-- 1. TYTUŁ -->
+<section class="slide" style="padding:0; flex-direction:row; gap:0">
+  <div style="width:860px; padding:110px 0 80px 110px; display:flex; flex-direction:column; justify-content:space-between">
+    <div style="display:flex; flex-direction:column; gap:34px">
+      <img src="../brand/retentoor-mark.svg" alt="" style="width:120px; height:120px" />
+      <div class="wordmark">Reten<i>too</i>r</div>
+      <div style="font-size:48px; font-weight:900; line-height:1.15">Zatrzymaj wodę<br />na swoim polu.</div>
+      <div class="lead" style="font-size:30px">Numer działki → uprawa → raport w kilka sekund. Ocena suszy, przyczyny, którędy ucieka woda i ile możesz jej zatrzymać – z otwartych danych z 10 lat.</div>
+    </div>
+    <div class="note" style="font-size:22px">HackNation 2026 · zadanie KOWR „Zatrzymaj wodę, chroń plony” · zespół&nbsp;AGH_BIT_OMEGA</div>
+  </div>
+  <div style="flex:1; padding:90px 70px 90px 0; display:flex; align-items:center; justify-content:flex-end">
+    <div class="shot fit" style="width:990px; align-self:center"><img src="../screens/02-raport-gora.png" alt="Raport Retentoor" /></div>
+  </div>
+</section>
+
+<!-- 2. PROBLEM -->
+<section class="slide">
+  <div class="top"><b>Reten<i>too</i>r</b><span>2 / 10 · Problem</span></div>
+  <h1>Susza wraca co kilka lat, a dane, które mogą pomóc, są <em>rozproszone</em>.</h1>
+  <div class="row">
+    <div class="col" style="flex:1">
+      <ul class="pts">
+        <li>Na glebach lekkich susza rolnicza dotyka uprawy w <b>kilku sezonach na dziesięć</b>.</li>
+        <li>Dane są w <b>5 kategoriach</b> u wielu dostawców – i wymagają wiedzy GIS.</li>
+        <li>Doradca nie ma czasu na analizę każdej działki; rolnik decyduje „na oko”.</li>
+        <li>Nawadnianie jest drogie i wymaga formalności. <b>Najpierw trzeba zatrzymać wodę, która już spada.</b></li>
+      </ul>
+      <div style="margin-top:auto; display:flex; gap:32px; align-items:center">
+        <div class="big" style="white-space:nowrap">4 / 10</div>
+        <div><div style="font-size:30px; font-weight:900">sezonów z suszą</div><div class="note">ziemniak, działka w gm. Murowana Goślina (gleba lekka, kat. II) – wynik z Retentoor, lata 2016–2025</div></div>
+      </div>
+    </div>
+    <div class="col" style="width:820px">
+      <div class="tiles">
+        <div class="tile"><h3>Pogoda</h3><p>Open-Meteo (ERA5), NASA POWER, MET Norway</p></div>
+        <div class="tile"><h3>Satelita</h3><p>Copernicus Sentinel-2 (Earth Search, AWS)</p></div>
+        <div class="tile"><h3>Gleba</h3><p>IUNG-PIB (kategorie, progi suszy), ISRIC SoilGrids</p></div>
+        <div class="tile"><h3>Hydrologia</h3><p>rowy BDOT10k, wody i mokradła IUNG, spływ z NMT</p></div>
+        <div class="tile" style="grid-column:span 2"><h3>Dane przestrzenne</h3><p>ULDK (działki), NMT (rzeźba terenu), ortofotomapa, KIEG – GUGiK</p></div>
+      </div>
+      <div class="note">Retentoor łączy je dla jednej działki, w jednym raporcie, w języku rolnika.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. ROZWIĄZANIE -->
+<section class="slide">
+  <div class="top"><b>Reten<i>too</i>r</b><span>3 / 10 · Rozwiązanie</span></div>
+  <h1>Trzy kroki dla rolnika. <em>Pięć etapów</em> analizy w kolejności KOWR.</h1>
+  <div class="row">
+    <div class="col" style="width:560px">
+      <ul class="pts">
+        <li><b>Działka</b> – numer ewidencyjny albo kliknięcie na ortofotomapie z granicami i rowami.</li>
+        <li><b>Uprawa</b> – 14 grup upraw jak w systemie suszy IUNG.</li>
+        <li><b>Data</b> – dziś, dowolny dzień z 10 lat albo do 16 dni naprzód (prognoza).</li>
+      </ul>
+      <div class="note" style="margin-top:auto">Bez konta i bez danych osobowych. Przeglądarka i telefon. Druk, PDF i link do raportu.</div>
+    </div>
+    <div style="flex:1; position:relative">
+      <div class="shot" style="position:absolute; left:0; top:0; width:1000px; height:560px"><img src="../screens/01-start.png" alt="" /></div>
+      <div class="phone" style="position:absolute; right:0; top:40px; width:290px"><img src="../screens/18-mobile-raport.png" alt="" /></div>
+    </div>
+  </div>
+  <div class="stages">
+    <div class="stage"><span>1</span>Ocena sytuacji wodnej</div>
+    <div class="stage"><span>2</span>Przyczyny</div>
+    <div class="stage"><span>3</span>Retencja krajobrazowa</div>
+    <div class="stage"><span>4</span>Gleba i agrotechnika</div>
+    <div class="stage"><span>5</span>Nawadnianie</div>
+  </div>
+</section>
+
+<!-- 4. OCENA -->
+<section class="slide">
+  <div class="top"><b>Reten<i>too</i>r</b><span>4 / 10 · Ocena sytuacji wodnej</span></div>
+  <h1>Ta sama metoda co <em>państwowy system monitoringu suszy</em> – dla jednej działki.</h1>
+  <div class="row">
+    <div class="shot" style="width:1060px; height:640px; align-self:flex-start"><img src="../screens/03-ocena.png" alt="" /></div>
+    <div class="col" style="flex:1">
+      <div class="verdict"><b>Susza rolnicza dla tej uprawy</b>KBW −197 mm przy progu −188 mm (kukurydza, gleba kat. II, 11.V–10.VII.2018)</div>
+      <ul class="pts" style="font-size:25px">
+        <li><b>Klimatyczny bilans wodny</b> (opad − parowanie) w okresach 60 dni, progi z Dz.U. 2019 poz. 739.</li>
+        <li>Osobno <b>susza teraz</b> i <b>podatność z 10 lat</b>: w których latach i okresach.</li>
+        <li><b>Nawadnianie</b>: bilans wody w strefie korzeni (FAO-56) + prognoza opadów na 7 dni → dawka w mm.</li>
+        <li>Porównanie <b>14 upraw</b> na tej samej działce.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 5. PRZYCZYNY I DZIAŁANIA -->
+<section class="slide">
+  <div class="top"><b>Reten<i>too</i>r</b><span>5 / 10 · Przyczyny i działania</span></div>
+  <h1>Każde zalecenie wynika z danych tej działki – <em>i mówi, z których</em>.</h1>
+  <div class="row">
+    <div class="col" style="width:620px">
+      <ul class="pts" style="font-size:26px">
+        <li><b>4 typy przyczyn</b> z Załącznika naukowego: opady i upał, gleba, odpływ, wrażliwość uprawy – z liczbami.</li>
+        <li><b>Kolejność KOWR</b>: krajobraz (rowy, oczka, pasy buforowe) → gleba (materia organiczna, międzyplony) → agrotechnika → nawadnianie.</li>
+        <li>Przy każdym działaniu: <b>priorytet, uzasadnienie, podstawa naukowa</b> (NWRM, CDR 2025, FAO-56), formalności z Prawa wodnego i <b>punkt na mapie</b>.</li>
+      </ul>
+    </div>
+    <div style="flex:1; position:relative">
+      <div class="shot" style="position:absolute; inset:0 0 120px 0"><img src="../screens/06-rekomendacje.png" alt="" /></div>
+      <div class="shot" style="position:absolute; left:-60px; bottom:0; width:640px; height:330px"><img src="../screens/05-przyczyny.png" alt="" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. WODA NA DZIAŁCE -->
+<section class="slide">
+  <div class="top"><b>Reten<i>too</i>r</b><span>6 / 10 · Woda na działce</span></div>
+  <h1>Pokazujemy, <em>którędy woda ucieka</em> z pola – i ile m³ zatrzyma każde działanie.</h1>
+  <div class="row">
+    <div class="shot fit" style="width:1180px"><img src="../screens/09-woda-pluznica.png" alt="" /></div>
+    <div class="col" style="flex:1">
+      <div class="kpi"><div class="v">~530 m³</div><div class="l">co sezon z zastawki na rowie przy działce</div></div>
+      <div class="kpi"><div class="v">~200 m³</div><div class="l">z każdej ulewy w oczku tam, gdzie zbiera się woda</div></div>
+      <div class="kpi"><div class="v">51%</div><div class="l">spływu ucieka na południe (inna działka, stok w Trzciannem)</div></div>
+      <div class="note">Model spływu D8 na numerycznym modelu terenu GUGiK. Założenia przy każdej liczbie są jawne.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. SATELITA -->
+<section class="slide">
+  <div class="top"><b>Reten<i>too</i>r</b><span>7 / 10 · Satelita</span></div>
+  <h1>Sentinel-2 <em>niezależnie potwierdza</em> ocenę – i pokazuje cały sezon pola.</h1>
+  <div class="row">
+    <div class="shot fit" style="width:1180px"><img src="../screens/12-sezon.png" alt="" /></div>
+    <div class="col" style="flex:1">
+      <ul class="pts" style="font-size:26px">
+        <li><b>Wilgotność (NDMI) i zieleń (NDVI)</b> roślin na tle tej samej pory roku w poprzednich latach.</li>
+        <li>Maska chmur; zdjęcie tylko, gdy ≥ 80% działki jest bez chmur.</li>
+        <li>Interpretacja <b>zależna od uprawy</b>: po żniwach niski NDVI to nie susza.</li>
+        <li><b>Sezon z satelity</b>: każde bezchmurne zdjęcie od marca do października, z wykresem.</li>
+      </ul>
+      <div class="shot" style="height:300px; margin-top:auto"><img src="../screens/13-satelita-ndmi.png" alt="" style="object-position:center 40%" /></div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. WIARYGODNOŚĆ -->
+<section class="slide">
+  <div class="top"><b>Reten<i>too</i>r</b><span>8 / 10 · Dane i wiarygodność</span></div>
+  <h1>14 otwartych usług danych – i uczciwa odpowiedź, <em>na ile ufać wynikowi</em>.</h1>
+  <div class="row">
+    <div class="col" style="flex:1.05">
+      <div style="font-size:28px; font-weight:900">Skąd poziom pewności</div>
+      <table>
+        <tr><td class="cut">start</td><td><b>wysoka</b> (3 pkt) – potem minus za każdy brak</td></tr>
+        <tr><td class="cut">−2</td><td>brak kategorii gleby IUNG – nie da się porównać z progiem suszy</td></tr>
+        <tr><td class="cut">−1</td><td>gleba organiczna albo teren nierolniczy</td></tr>
+        <tr><td class="cut">−1</td><td>niepełne dane pogodowe w ocenianym okresie</td></tr>
+        <tr><td class="cut">−1</td><td>pogoda z zapasowego NASA POWER (~50 km zamiast 9–25 km Open-Meteo)</td></tr>
+        <tr><td class="cut">−1</td><td>data analizy dalej niż 7 dni naprzód</td></tr>
+      </table>
+      <div class="note" style="font-size:22px">Ta sama działka może mieć raz pewność wysoką, a raz średnią – gdy Open-Meteo limituje zapytania, aplikacja przełącza się na NASA POWER i mówi o tym w raporcie.</div>
+    </div>
+    <div class="col" style="flex:1">
+      <table>
+        <tr><th>Kategoria</th><th>Źródła</th></tr>
+        <tr><td><b>Pogoda</b></td><td>Open-Meteo ERA5 · NASA POWER (zapas) · prognoza Open-Meteo / MET Norway</td></tr>
+        <tr><td><b>Satelita</b></td><td>Copernicus Sentinel-2 L2A (Earth Search)</td></tr>
+        <tr><td><b>Gleba</b></td><td>IUNG-PIB (kategorie, progi KBW) · ISRIC SoilGrids</td></tr>
+        <tr><td><b>Hydrologia</b></td><td>BDOT10k (rowy) · IUNG (wody, mokradła) · spływ z NMT</td></tr>
+        <tr><td><b>Przestrzenne</b></td><td>ULDK · NMT · ortofotomapa · KIEG · UUG</td></tr>
+      </table>
+      <ul class="pts" style="font-size:23px; gap:14px">
+        <li>Każde źródło w raporcie z <b>datą pobrania, zakresem i licencją</b>.</li>
+        <li>Brakujące dane wypisane wprost – <b>bez pozornej precyzji</b>.</li>
+        <li>Wszystko darmowe i legalne (CC BY, dane PZGiK, Copernicus).</li>
+      </ul>
+    </div>
+  </div>
+  <div class="stages" style="grid-template-columns: repeat(3, 1fr)">
+    <div class="stage" style="font-weight:400"><span>1</span><div><b>Pogoda:</b> Open-Meteo ERA5 → przy limicie NASA POWER (rozgrzana siatka całej Polski)</div></div>
+    <div class="stage" style="font-weight:400"><span>2</span><div><b>Prognoza:</b> Open-Meteo 16 dni → MET Norway ~10 dni</div></div>
+    <div class="stage" style="font-weight:400"><span>3</span><div><b>Każde źródło:</b> cache, starsza kopia przy awarii, baner w aplikacji</div></div>
+  </div>
+</section>
+
+<!-- 9. JAK POWSTAJE RAPORT -->
+<section class="slide">
+  <div class="top"><b>Reten<i>too</i>r</b><span>9 / 10 · Jak powstaje raport</span></div>
+  <h1>Pięć kroków od numeru działki do rekomendacji – <em>każdy z jawnym źródłem</em>.</h1>
+  <div class="shot fit" style="width:1500px; align-self:center; box-shadow:0 10px 30px rgb(0 0 0 / 0.08)"><img src="../screens/22-karuzela-raportu.png" alt="Karuzela kroków raportu w widoku Źródła i metoda" /></div>
+  <div class="steps5">
+    <div class="tile"><h3><span>1</span>Działka</h3><p>Granice i powierzchnia z ewidencji gruntów po numerze albo kliknięciu na mapie.</p><div class="src">ULDK · ortofotomapa GUGiK</div></div>
+    <div class="tile on"><h3><span>2</span>Bilans wodny</h3><p>Opad minus parowanie ET₀ w oknach 60 dni z 10 lat, na tle progów suszy dla gleby i uprawy.</p><div class="src">Open-Meteo / NASA POWER · IUNG-PIB · FAO-56</div></div>
+    <div class="tile"><h3><span>3</span>Przyczyny</h3><p>Gleba, spadki terenu, rowy melioracyjne i otoczenie: wody, lasy, mokradła.</p><div class="src">IUNG-PIB · SoilGrids · NMT · BDOT10k</div></div>
+    <div class="tile"><h3><span>4</span>Działania</h3><p>Reguły na zmierzonych danych, w kolejności KOWR: krajobraz, gleba, agrotechnika, nawadnianie.</p><div class="src">NWRM · CDR 2025 · prognoza 7 dni</div></div>
+    <div class="tile"><h3><span>5</span>Kontrola z satelity</h3><p>Wilgotność (NDMI) i zieleń (NDVI) na tle tej samej pory roku w poprzednich latach.</p><div class="src">Copernicus Sentinel-2</div></div>
+  </div>
+</section>
+
+<!-- 10. WARTOŚĆ -->
+<section class="slide">
+  <div class="top"><b>Reten<i>too</i>r</b><span>10 / 10 · Wartość i dalszy rozwój</span></div>
+  <h1>Gotowe do pilotażu z <em>doradcami KOWR i ODR</em>.</h1>
+  <div class="cols3">
+    <div class="tile"><h3>Dla rolnika</h3><ul><li>tańsze działania najpierw: rowy, oczka, gleba</li><li>decyzja o nawadnianiu z liczbami</li><li>raport na telefonie, w polu</li></ul></div>
+    <div class="tile"><h3>Dla KOWR i doradztwa</h3><ul><li>jednolita, uzasadniona ocena każdej działki w Polsce</li><li>link do raportu zamiast wizyty</li><li>katalog działań z ekoschematami</li></ul></div>
+    <div class="tile"><h3>Dalszy rozwój</h3><ul><li>ryzyko suszy na resztę sezonu (analogi klimatyczne, SARIMAX)</li><li>wspólne zastawki dla działek przy jednym rowie</li><li>nabory ARiMR, walidacja stacjami IMGW</li></ul></div>
+  </div>
+  <div class="row">
+    <div class="shot" style="width:1080px"><img src="../screens/16-dzialania.png" alt="" /></div>
+    <div class="col" style="flex:1; gap:16px; justify-content:flex-end">
+      <div style="font-size:44px; font-weight:900; line-height:1.15">Zatrzymaj wodę,<br /><span style="color:var(--green)">chroń plony.</span></div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

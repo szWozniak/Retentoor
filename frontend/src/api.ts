@@ -110,6 +110,8 @@ export type Analysis = {
   recommendations: Recommendation[]
   irrigation: Irrigation | null
   crop_comparison: { crop: string; name: string; drought_years: number | null; n: number; suited: boolean }[]
+  /** "Ile wody zatrzymasz" – volumes in m³ (the pond comes from /analysis/runoff) */
+  water: Water | null
   confidence: 'wysoki' | 'średni' | 'niski'
   limitations: string[]
   missing: string[]
@@ -141,6 +143,37 @@ export type Satellite = {
   source: Source
   limitations: string[]
   elapsed_s: number
+}
+
+export type WaterMeasure = { id: string; title: string; m3: number; days: number; permanent: boolean; assumptions: string[] }
+export type Water = {
+  area_m2: number
+  rain_year_mm: number
+  rain_year_m3: number
+  years: string
+  use_mm_day: number
+  use_m3_day: number
+  soil_m3: number | null
+  measures: WaterMeasure[]
+}
+
+type LatLon = [number, number]
+/** Flow model on the GUGiK terrain model: where water runs, leaves and collects. */
+export type Runoff = {
+  flat: boolean
+  step_m: number
+  relief_m: number
+  arrows: LatLon[][]
+  streams: { path: LatLon[]; w: number; on: boolean }[]
+  outlets: { lat: number; lon: number; share: number; dir: string }[]
+  sinks: { lat: number; lon: number; share: number }[]
+  kept_share: number
+  inflow_ha: number
+  storm_loss_m3: number
+  pond: { lat: number; lon: number; catchment_ha: number; storm_mm: number; runoff_coef: number; storm_m3: number; pond_m2: number } | null
+  notes: string[]
+  area_m2: number
+  source: Source
 }
 
 export class ApiError extends Error {
@@ -176,6 +209,7 @@ export const api = {
   geocode: (q: string, full = false) => request<Place[]>(`/geocode?q=${encodeURIComponent(q)}${full ? '&full=true' : ''}`),
   analyse: (parcelId: string, crop: string, date: string) =>
     request<Analysis>(`/analysis?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`),
+  runoff: (parcelId: string) => request<Runoff>(`/analysis/runoff?parcel_id=${encodeURIComponent(parcelId)}`),
   satellite: (parcelId: string, crop: string, date: string) =>
     request<Satellite>(`/analysis/satellite?parcel_id=${encodeURIComponent(parcelId)}&crop=${crop}&date=${date}`),
 }

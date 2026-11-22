@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowDown, CalendarRange, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, ArrowDown, CalendarRange, CheckCircle2, ChevronDown } from 'lucide-react'
 import { CartesianGrid, ComposedChart, Line, ReferenceLine, Scatter, XAxis, YAxis } from 'recharts'
 import type { Analysis } from '@/api'
 import { Badge } from '@/components/ui/badge'
@@ -9,6 +9,7 @@ import { KpiCard } from '@/components/charts'
 import { CausesSection, CropComparison, RecommendationsSection } from './AdviceSections'
 import { ReportOutline } from './ReportOutline'
 import { SatelliteCard } from './SatelliteCard'
+import { WaterCard } from './WaterCard'
 import { formatDate, formatDateShort, formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -22,6 +23,7 @@ const SECTIONS = [
   { id: 'ocena', label: 'Ocena sytuacji' },
   { id: 'historia', label: 'Historia suszy' },
   { id: 'przyczyny', label: 'Przyczyny' },
+  { id: 'woda', label: 'Woda na działce' },
   { id: 'rekomendacje', label: 'Co możesz zrobić' },
   { id: 'uprawy', label: 'Porównanie upraw' },
   { id: 'zrodla', label: 'Źródła i wiarygodność' },
@@ -278,6 +280,9 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
       <div id="przyczyny" data-section>
         <CausesSection a={a} />
       </div>
+      <div id="woda" data-section>
+        <WaterCard a={a} />
+      </div>
       <div id="rekomendacje" data-section>
         <RecommendationsSection a={a} onLocate={onLocate} />
       </div>
@@ -285,16 +290,21 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
         <CropComparison a={a} />
       </div>
 
-      <Card id="zrodla" data-section>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Wiarygodność i źródła
-            <Badge variant={a.confidence === 'wysoki' ? 'default' : a.confidence === 'średni' ? 'secondary' : 'outline'}>
-              pewność: {a.confidence}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 text-sm">
+      {/* collapsed by default – details for the curious; opened automatically for printing (Layout) */}
+      <details id="zrodla" data-section className="group bg-card overflow-hidden rounded-xl border">
+        <summary className="hover:bg-muted/60 flex cursor-pointer list-none items-center gap-3 p-5 select-none [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 flex-1">
+            <span className="type-title-sm flex flex-wrap items-center gap-2">
+              Wiarygodność i źródła
+              <Badge variant={a.confidence === 'wysoki' ? 'default' : a.confidence === 'średni' ? 'secondary' : 'outline'}>pewność: {a.confidence}</Badge>
+            </span>
+            <span className="text-muted-foreground mt-0.5 block text-sm">
+              {a.sources.length} źródeł danych{a.missing.length ? `, brakuje: ${a.missing.length}` : ''} · rozwiń, żeby zobaczyć szczegóły
+            </span>
+          </span>
+          <ChevronDown className="text-muted-foreground size-5 shrink-0 transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="grid gap-4 border-t p-5 text-sm">
           {a.missing.length > 0 && (
             <div>
               <p className="mb-1 font-medium">Brakujące dane</p>
@@ -318,8 +328,8 @@ export function AnalysisResult({ a, onLocate }: { a: Analysis; onLocate?: (lat: 
               ))}
             </ul>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </details>
       </div>
       <ReportOutline items={SECTIONS.filter((x) => x.id !== 'historia' || a.history.years.length > 0)} />
     </div>

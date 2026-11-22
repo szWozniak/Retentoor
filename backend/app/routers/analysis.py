@@ -8,7 +8,7 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, HTTPException, Query, Response
 
-from ..services import advisor, ditches, forecast, iung, kbw, meteo, sentinel, soilgrids, surroundings, terrain, uldk
+from ..services import advisor, ditches, forecast, iung, kbw, meteo, runoff, sentinel, soilgrids, surroundings, terrain, uldk, water_budget
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -54,6 +54,29 @@ async def satellite(
 
 
 SCENE_RE = re.compile(r"^S2[A-D]_\d{2}[A-Z]{3}_\d{8}_\d+_L2A$")
+
+
+@router.get("/runoff")
+async def runoff_map(parcel_id: str = Query(..., min_length=3, max_length=100)):
+    """Where surface water goes on and around the parcel (flow model on the GUGiK terrain model)."""
+    t0 = time.perf_counter()
+    try:
+        parcel = await uldk.by_id(parcel_id)
+    except uldk.ParcelNotFound:
+        raise HTTPException(404, "Nie znaleziono działki.")
+    except uldk.UldkError as e:
+        raise HTTPException(503, str(e))
+    try:
+        r = await asyncio.wait_for(runoff.analyse(parcel.geometry), 30)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(503, "Model terenu GUGiK (NMT) chwilowo nie odpowiada – mapa spływu niedostępna. Spróbuj ponownie później.") from e
+    if r is None:
+        raise HTTPException(404, "Brak danych wysokościowych dla tej działki (NMT GUGiK).")
+    return runoff.as_dict(r) | {
+        "area_m2": round(parcel.area_ha * 10_000),
+        "source": {"name": "GUGiK NMT – numeryczny model terenu", "url": terrain.URL, "license": "dane PZGiK udostępniane bez opłat"},
+        "elapsed_s": round(time.perf_counter() - t0, 2),
+    }
 
 
 @router.get("/satellite/image")
@@ -267,6 +290,7 @@ async def analyse(
         "recommendations": [asdict(r) for r in advice["recommendations"]],
         "irrigation": advice["irrigation"],
         "crop_comparison": comparison,
+        "water": water_budget.budget(df, d, parcel.area_ha, crop, sg.awc_mm_100 if sg else None, dit_d),
         "confidence": confidence,
         "limitations": limitations,
         "missing": missing,

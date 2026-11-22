@@ -463,3 +463,19 @@ select.app-select {
     display: block !important;
   }
 }
+
+/* ---- runoff map (WaterCard): muted orthophoto so the water is the hero ---- */
+.runoff-base { filter: grayscale(0.75) contrast(0.85) brightness(1.08); }
+.dark .runoff-base { filter: grayscale(0.75) contrast(0.9) brightness(0.62); }
+.runoff-flow { animation: runoff-flow 1.6s linear infinite; }
+@keyframes runoff-flow { to { stroke-dashoffset: -15; } }
+@media (prefers-reduced-motion: reduce) { .runoff-flow { animation: none; } }
+.runoff-pin {
+  position: absolute; transform: translate(-50%, -50%); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border-radius: 999px; font: 600 11px/1.2 var(--font-sans, system-ui);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+}
+.runoff-pin--dark { background: rgb(15 23 42 / 0.82); color: #fff; }
+.runoff-pin--pond { background: #15803d; color: #fff; outline: 2px solid #fff; }
+.runoff-dot { width: 7px; height: 7px; border-radius: 999px; background: #38bdf8; display: inline-block; }

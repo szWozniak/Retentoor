@@ -7,6 +7,7 @@ ET0 = FAO-56 Penman-Monteith reference evapotranspiration (Open-Meteo's et0_fao_
 
 import asyncio
 import json
+import time
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
@@ -56,8 +57,18 @@ class RateLimited(Exception):
     pass
 
 
+BLOCK_S = 300  # after Open-Meteo says 429, skip it for this long: every new grid cell would otherwise waste ~5 s on retries
+_blocked_until = 0.0
+
+
 async def _get(url: str, params: dict) -> str:
-    """GET with a short backoff on 429 (Open-Meteo free tier limits are per IP – shared at events)."""
+    """GET with a short backoff on 429 (Open-Meteo free tier limits are per IP – shared at events).
+
+    Circuit breaker: one 429 that survives the retries blocks Open-Meteo for BLOCK_S for all cells, so callers fall back
+    (NASA POWER, MET Norway) immediately instead of retrying for each new parcel."""
+    global _blocked_until
+    if time.monotonic() < _blocked_until:
+        raise RateLimited("Open-Meteo: przekroczony limit zapytań (429) – chwilowo używamy źródeł zapasowych.")
     if settings.openmeteo_api_key:
         # paid plan: same API on customer-* hosts, authenticated with apikey
         url = url.replace("https://archive-api.", "https://customer-archive-api.").replace("https://api.", "https://customer-api.")
@@ -70,6 +81,7 @@ async def _get(url: str, params: dict) -> str:
             if r.status_code != 429:
                 r.raise_for_status()
                 return r.text
+        _blocked_until = time.monotonic() + BLOCK_S
         raise RateLimited("Open-Meteo: przekroczony limit zapytań (429). Spróbuj za chwilę.")
 
 

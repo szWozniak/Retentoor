@@ -6,6 +6,7 @@ Reference evapotranspiration is computed here with the full FAO-56 Penman-Montei
 (Allen et al. 1998, eq. 6) from Tmax/Tmin/RH/wind(2 m)/solar radiation."""
 
 import json
+from datetime import timedelta
 import math
 
 import numpy as np
@@ -64,7 +65,9 @@ async def daily(lat: float, lon: float, start: str, end: str) -> tuple[pd.DataFr
             r.raise_for_status()
             return r.text
 
-    text, fetched_at, _ = await cache.cached("nasa_power", f"{clat:.3f},{clon:.3f}:{start}:{end}", fetch)
+    # key without the end date: one entry per grid cell, refreshed daily. If NASA is unreachable, cache.cached serves the
+    # older copy, so a prewarmed grid (scripts/prewarm_weather.py) keeps the fallback working for all of Poland.
+    text, fetched_at, _ = await cache.cached("nasa_power", f"v2:{clat:.3f},{clon:.3f}:{start}", fetch, max_age=timedelta(days=1))
     js = json.loads(text)
     p = js["properties"]["parameter"]
     elev = (js.get("geometry", {}).get("coordinates") or [0, 0, 150])[2] or 150

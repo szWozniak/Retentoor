@@ -15,16 +15,21 @@ const links = [
   { to: '/zrodla', label: 'Źródła i metoda' },
 ]
 
-/** Reports always print in the light theme (white paper), regardless of the on-screen theme. */
+/** Reports always print in the light theme (white paper) and with every collapsed section open. */
 function usePrintLightTheme() {
   useEffect(() => {
     let wasDark = false
+    let closed: HTMLDetailsElement[] = []
     const before = () => {
       wasDark = document.documentElement.classList.contains('dark')
       document.documentElement.classList.remove('dark')
+      // collapsed sections (e.g. "Wiarygodność i źródła") belong in the printed report
+      closed = Array.from(document.querySelectorAll('details:not([open])'))
+      closed.forEach((d) => (d.open = true))
     }
     const after = () => {
       if (wasDark) document.documentElement.classList.add('dark')
+      closed.forEach((d) => (d.open = false))
     }
     window.addEventListener('beforeprint', before)
     window.addEventListener('afterprint', after)

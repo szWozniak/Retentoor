@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
  * - click -> onPick(lat, lon); selected parcel drawn as a vector, coloured by land-use class
  */
 
-const ORTHO_WMTS =
+export const ORTHO_WMTS =
   'https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMTS/StandardResolution?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0' +
   '&LAYER=ORTOFOTOMAPA&STYLE=default&FORMAT=image/jpeg&TILEMATRIXSET=EPSG:3857&TILEMATRIX=EPSG:3857:{z}&TILEROW={y}&TILECOL={x}'
 const PARCELS_WMS = 'https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow'

@@ -2,14 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { CloudOff, RefreshCw, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-type ServiceState = { name: string; state: 'ok' | 'limit' | 'down' }
-type Group = { id: 'gugik' | 'weather'; state: 'ok' | 'limit' | 'down'; services: ServiceState[] }
-type Status = { ok: boolean; groups: Group[] } | { ok: false; offline: true }
+export type ServiceState = { name: string; state: 'ok' | 'limit' | 'down' }
+export type Group = { id: 'gugik' | 'weather'; state: 'ok' | 'limit' | 'down'; services: ServiceState[] }
+export type Status = { ok: boolean; groups: Group[] } | { ok: false; offline: true }
 type Message = { key: string; icon: typeof WifiOff; title: string; body: string }
 
 const POLL_MS = 60_000 // the backend caches the check for 60 s, so polling never adds load on the data providers
 
-async function fetchStatus(fresh = false): Promise<Status> {
+export async function fetchStatus(fresh = false): Promise<Status> {
   try {
     const res = await fetch(`/api/health/sources${fresh ? '?fresh=true' : ''}`)
     if (!res.ok) return { ok: false, offline: true }

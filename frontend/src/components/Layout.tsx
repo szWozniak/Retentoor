@@ -11,6 +11,8 @@ import { useSavedFields } from '@/lib/fields'
 const links = [
   { to: '/', label: 'Analiza działki' },
   { to: '/pola', label: 'Moje pola' },
+  { to: '/dzialania', label: 'Działania retencyjne' },
+  { to: '/zrodla', label: 'Źródła i metoda' },
 ]
 
 /** Reports always print in the light theme (white paper), regardless of the on-screen theme. */
@@ -50,7 +52,7 @@ export default function Layout() {
           <Link to="/" aria-label="Retentoor – strona główna">
             <Logo />
           </Link>
-          <nav className="flex gap-1" aria-label="Główna nawigacja">
+          <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] gap-1 overflow-x-auto px-4 [scrollbar-width:none] md:order-none md:mx-0 md:w-auto md:px-0" aria-label="Główna nawigacja">
             {links.map((l) => (
               <NavLink
                 key={l.to}
@@ -58,7 +60,7 @@ export default function Layout() {
                 end
                 className={({ isActive }) =>
                   cn(
-                    'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                    'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors',
                     isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   )
                 }

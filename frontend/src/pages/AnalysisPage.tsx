@@ -85,7 +85,7 @@ export default function AnalysisPage() {
   const [analysing, setAnalysing] = useState(false)
   const [focus, setFocus] = useState<{ lat: number; lon: number; t: number; zoom?: number } | null>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
-  const { fields, save, remove, isSaved, setCrop: rememberCrop } = useSavedFields()
+  const { fields, save, remove, isSaved, record } = useSavedFields()
   const [userPos, setUserPos] = useState<{ lat: number; lon: number; accuracy: number } | null>(null)
   const [locating, setLocating] = useState(false)
 
@@ -159,7 +159,7 @@ export default function AnalysisPage() {
     try {
       const a = await api.analyse(p.id, c, d)
       setAnalysis(a)
-      rememberCrop(p.id, c)
+      record(a)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Analiza nie powiodła się')
     } finally {
@@ -284,6 +284,7 @@ export default function AnalysisPage() {
                         toast('Usunięto z Moich pól')
                       } else {
                         save(parcel, crop || undefined)
+                        if (analysis?.parcel.id === parcel.id) record(analysis)
                         toast.success('Zapisano w Moich polach', { description: 'Nazwę możesz zmienić w zakładce Moje pola.' })
                       }
                     }}
